@@ -1,0 +1,16 @@
+.global _exit
+_exit: nop
+.global _isatty
+_isatty: nop
+.global _kill
+_kill:  nop
+.global _getpid
+_getpid: nop
+.global _close
+_close: nop
+.global _lseek
+_lseek: nop
+.global _fstat
+_fstat: nop
+.global _sbrk
+_sbrk: nop

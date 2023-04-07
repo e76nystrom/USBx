@@ -33,6 +33,7 @@
 
 #include "device/dcd.h"
 #include "dwc2_type.h"
+#include "serialio.h"
 
 // Following symbols must be defined by port header
 // - _dwc2_controller[]: array of controllers
@@ -127,6 +128,7 @@ static void update_grxfsiz(uint8_t rhport)
 // Start of Bus Reset
 static void bus_reset(uint8_t rhport)
 {
+ putBufChar('R');
   dwc2_regs_t * dwc2     = DWC2_REG(rhport);
   uint8_t const ep_count = _dwc2_controller[rhport].ep_count;
 
@@ -378,6 +380,7 @@ static bool phy_hs_supported(dwc2_regs_t * dwc2)
 
 static void phy_fs_init(dwc2_regs_t * dwc2)
 {
+ PRINT_FUNC();
   TU_LOG(DWC2_DEBUG, "Fullspeed PHY init\r\n");
 
   // Select FS PHY
@@ -483,6 +486,7 @@ static bool check_dwc2(dwc2_regs_t * dwc2)
 
 void dcd_init (uint8_t rhport)
 {
+ PRINT_FUNC();
   // Programming model begins in the last section of the chapter on the USB
   // peripheral in each Reference Manual.
   dwc2_regs_t * dwc2 = DWC2_REG(rhport);
@@ -594,6 +598,7 @@ void dcd_remote_wakeup(uint8_t rhport)
 
 void dcd_connect(uint8_t rhport)
 {
+ PRINT_FUNC();
   (void) rhport;
   dwc2_regs_t * dwc2 = DWC2_REG(rhport);
   dwc2->dctl &= ~DCTL_SDIS;
@@ -601,7 +606,8 @@ void dcd_connect(uint8_t rhport)
 
 void dcd_disconnect(uint8_t rhport)
 {
-  (void) rhport;
+ PRINT_FUNC();
+ (void) rhport;
   dwc2_regs_t * dwc2 = DWC2_REG(rhport);
   dwc2->dctl |= DCTL_SDIS;
 }
@@ -1009,6 +1015,7 @@ static void handle_rxflvl_irq(uint8_t rhport)
     case GRXSTS_PKTSTS_GLOBALOUTNAK: break;
 
     case GRXSTS_PKTSTS_SETUPRX:
+     putBufChar('1');
       // Setup packet received
 
       // We can receive up to three setup packets in succession, but
@@ -1018,12 +1025,14 @@ static void handle_rxflvl_irq(uint8_t rhport)
     break;
 
     case GRXSTS_PKTSTS_SETUPDONE:
+     putBufChar('2');
       // Setup packet done (Interrupt)
       epout->doeptsiz |= (3 << DOEPTSIZ_STUPCNT_Pos);
     break;
 
     case GRXSTS_PKTSTS_OUTRX:
     {
+     putBufChar('3');
       // Out packet received
       xfer_ctl_t *xfer = XFER_CTL_BASE(epnum, TUSB_DIR_OUT);
 
@@ -1057,6 +1066,7 @@ static void handle_rxflvl_irq(uint8_t rhport)
 
     // Out packet done (Interrupt)
     case GRXSTS_PKTSTS_OUTDONE:
+     putBufChar('4');
         // Occurred on STM32L47 with dwc2 version 3.10a but not found on other version like 2.80a or 3.30a
         // May (or not) be 3.10a specific feature/bug or depending on MCU configuration
         // XFRC complete is additionally generated when
@@ -1098,6 +1108,7 @@ static void handle_epout_irq (uint8_t rhport)
   {
     if ( dwc2->daint & TU_BIT(DAINT_OEPINT_Pos + n) )
     {
+     putBufChar('0' + n);
       dwc2_epout_t* epout = &dwc2->epout[n];
 
       uint32_t const doepint = epout->doepint;
@@ -1151,6 +1162,7 @@ static void handle_epin_irq (uint8_t rhport)
   {
     if ( dwc2->daint & TU_BIT(DAINT_IEPINT_Pos + n) )
     {
+     putBufChar('0' + n);
       // IN XFER complete (entire xfer).
       xfer_ctl_t *xfer = XFER_CTL_BASE(n, TUSB_DIR_IN);
 
@@ -1219,20 +1231,23 @@ static void handle_epin_irq (uint8_t rhport)
 
 void dcd_int_handler(uint8_t rhport)
 {
-  dwc2_regs_t *dwc2 = DWC2_REG(rhport);
+ putBufChar('#');
+ dwc2_regs_t *dwc2 = DWC2_REG(rhport);
 
   uint32_t const int_mask = dwc2->gintmsk;
   uint32_t const int_status = dwc2->gintsts & int_mask;
 
   if(int_status & GINTSTS_USBRST)
   {
-    // USBRST is start of reset.
+   putBufChar('a');
+   // USBRST is start of reset.
     dwc2->gintsts = GINTSTS_USBRST;
     bus_reset(rhport);
   }
 
   if(int_status & GINTSTS_ENUMDNE)
   {
+   putBufChar('b');
     // ENUMDNE is the end of reset where speed of the link is detected
 
     dwc2->gintsts = GINTSTS_ENUMDNE;
@@ -1260,13 +1275,15 @@ void dcd_int_handler(uint8_t rhport)
 
   if(int_status & GINTSTS_USBSUSP)
   {
+   putBufChar('c');
     dwc2->gintsts = GINTSTS_USBSUSP;
     dcd_event_bus_signal(rhport, DCD_EVENT_SUSPEND, true);
   }
 
   if(int_status & GINTSTS_WKUINT)
   {
-    dwc2->gintsts = GINTSTS_WKUINT;
+   putBufChar('d');
+   dwc2->gintsts = GINTSTS_WKUINT;
     dcd_event_bus_signal(rhport, DCD_EVENT_RESUME, true);
   }
 
@@ -1275,6 +1292,7 @@ void dcd_int_handler(uint8_t rhport)
 
   if(int_status & GINTSTS_OTGINT)
   {
+   putBufChar('e');
     // OTG INT bit is read-only
     uint32_t const otg_int = dwc2->gotgint;
 
@@ -1288,6 +1306,7 @@ void dcd_int_handler(uint8_t rhport)
 
   if(int_status & GINTSTS_SOF)
   {
+   putBufChar('f');
     dwc2->gotgint = GINTSTS_SOF;
 
     if (_sof_en)
@@ -1307,6 +1326,7 @@ void dcd_int_handler(uint8_t rhport)
   // RxFIFO non-empty interrupt handling.
   if(int_status & GINTSTS_RXFLVL)
   {
+   putBufChar('g');
     // RXFLVL bit is read-only
 
     // Mask out RXFLVL while reading data from FIFO
@@ -1333,6 +1353,7 @@ void dcd_int_handler(uint8_t rhport)
   // OUT endpoint interrupt handling.
   if(int_status & GINTSTS_OEPINT)
   {
+   putBufChar('h');
     // OEPINT is read-only, clear using DOEPINTn
     handle_epout_irq(rhport);
   }
@@ -1340,6 +1361,7 @@ void dcd_int_handler(uint8_t rhport)
   // IN endpoint interrupt handling.
   if(int_status & GINTSTS_IEPINT)
   {
+   putBufChar('i');
     // IEPINT bit read-only, clear using DIEPINTn
     handle_epin_irq(rhport);
   }
@@ -1349,6 +1371,7 @@ void dcd_int_handler(uint8_t rhport)
   //    printf("      IISOIXFR!\r\n");
   ////    TU_LOG(DWC2_DEBUG, "      IISOIXFR!\r\n");
   //  }
+ putBufChar('*');
 }
 
 #endif

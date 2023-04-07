@@ -1,6 +1,7 @@
 #THIS FILE IS AUTO GENERATED FROM THE TEMPLATE! DO NOT CHANGE!
 set(CMAKE_SYSTEM_NAME Generic)
 set(CMAKE_SYSTEM_VERSION 1)
+set(CMAKE_VERBOSE_MAKEFILE on)
 cmake_minimum_required(VERSION 3.25)
 
 project(USBx LANGUAGES C CXX ASM)
@@ -9,7 +10,8 @@ project(USBx LANGUAGES C CXX ASM)
 set(CMAKE_C_COMPILER arm-none-eabi-gcc)
 set(CMAKE_CXX_COMPILER arm-none-eabi-g++)
 set(CMAKE_ASM_COMPILER  arm-none-eabi-gcc)
-set(CMAKE_AR arm-none-eabi-ar)
+set(CMAKE_AR arm-none-eabi-gcc-ar)
+#set(CMAKE_AR gcc-ar)
 set(CMAKE_OBJCOPY arm-none-eabi-objcopy)
 set(CMAKE_OBJDUMP arm-none-eabi-objdump)
 set(SIZE arm-none-eabi-size)
@@ -28,6 +30,7 @@ set(CMAKE_C_STANDARD 11)
 #add_compile_options(-mfloat-abi=soft)
 
 add_compile_definitions(STM32H743xx)
+add_compile_definitions(STM32H7)
 add_compile_definitions(HSE_VALUE=8000000)
 add_compile_definitions(BOARD_TUD_RHPORT=0)
 add_compile_definitions(CFG_TUSB_MCU=OPT_MCU_STM32H7)
@@ -115,6 +118,8 @@ include_directories(
         # ../tinyusb/src/class/video/video_device.c
 
 set(SOURCES
+        ./project/exit.s
+        ./project/getSP.S
 ./project/startup_stm32h743xx.s
 ./src/portable/synopsys/dwc2/dcd_dwc2.c
 ./hw/mcu/st/cmsis_device_h7/Source/Templates/system_stm32h7xx.c
@@ -132,20 +137,34 @@ set(SOURCES
 ./hw/bsp/board.c
 ./project/usb_descriptors.c
 ./project/main.c
+./project/serialio.c
+./project/stm32Info.c
 ./src/tusb.c
 ./src/common/tusb_fifo.c
 ./src/device/usbd.c
 ./src/device/usbd_control.c
 ./src/class/cdc/cdc_device.c
+        ./project/stub.c
 )
 
-set(LINKER_SCRIPT ${CMAKE_SOURCE_DIR}/stm32h743xx_flash.ld)
-add_link_options(-nostdlib -nostartfiles)
-add_link_options(-Wl,-gc-sections,--print-memory-usage,-Map=${PROJECT_BINARY_DIR}/${PROJECT_NAME}.map)
+set(SOURCES1 ./project/stub.c )
+
+#set(CMAKE_C_ARCHIVE_CREATE ( = <CMAKE_AR> qcs <TARGET> <LINK_FLAGS> <OBJECTS>))
+#set(CMAKE_C_ARCHIVE_FINISH ( = true)) # Or any other no-op command
+
+#add_library(srcLib STATIC ${SOURCES1})
+
+#set(LINKER_SCRIPT ${CMAKE_SOURCE_DIR}/stm32h743xx_flash.ld)
+set(LINKER_SCRIPT ${CMAKE_SOURCE_DIR}/STM32H743ZITX_FLASH.ld)
+add_link_options(-Wl,--no-warn-rwx-segments)
+add_link_options(-nostartfiles)
+add_link_options(-lc -Wl,-gc-sections,--print-memory-usage,-Map=${PROJECT_BINARY_DIR}/${PROJECT_NAME}.map)
 add_link_options(-mcpu=cortex-m7 -mthumb -mthumb-interwork)
+#add_link_options(-T ${CMAKE_SOURCE_DIR}/libs.ld)
+#add_link_options(--whole-archive uart.a -Wl,--no-whole-archive)
 add_link_options(-T ${LINKER_SCRIPT})
 
-add_executable(${PROJECT_NAME}.elf ${SOURCES} ${LINKER_SCRIPT})
+add_executable(${PROJECT_NAME}.elf ${SOURCES})
 
 set(HEX_FILE ${PROJECT_BINARY_DIR}/${PROJECT_NAME}.hex)
 set(BIN_FILE ${PROJECT_BINARY_DIR}/${PROJECT_NAME}.bin)

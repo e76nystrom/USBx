@@ -34,6 +34,7 @@
 
 #include "device/usbd.h"
 #include "device/usbd_pvt.h"
+#include "serialio.h"
 
 //--------------------------------------------------------------------+
 // USBD Configuration
@@ -383,6 +384,7 @@ bool tud_inited(void)
 
 bool tud_init (uint8_t rhport)
 {
+ PRINT_FUNC();
   // skip if already initialized
   if ( tud_inited() ) return true;
 
@@ -423,7 +425,7 @@ bool tud_init (uint8_t rhport)
   // Init device controller driver
   dcd_init(rhport);
   dcd_int_enable(rhport);
-
+PRINT_FUNC();
   return true;
 }
 
