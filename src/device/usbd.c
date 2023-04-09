@@ -496,12 +496,14 @@ void tud_task_ext(uint32_t timeout_ms, bool in_isr)
     switch ( event.event_id )
     {
       case DCD_EVENT_BUS_RESET:
+       putBufChar('A');
         TU_LOG(USBD_DBG, ": %s Speed\r\n", tu_str_speed[event.bus_reset.speed]);
         usbd_reset(event.rhport);
         _usbd_dev.speed = event.bus_reset.speed;
       break;
 
       case DCD_EVENT_UNPLUGGED:
+       putBufChar('B');
         TU_LOG(USBD_DBG, "\r\n");
         usbd_reset(event.rhport);
 
@@ -510,6 +512,7 @@ void tud_task_ext(uint32_t timeout_ms, bool in_isr)
       break;
 
       case DCD_EVENT_SETUP_RECEIVED:
+       putBufChar('C');
         TU_LOG_PTR(USBD_DBG, &event.setup_received);
         TU_LOG(USBD_DBG, "\r\n");
 
@@ -535,6 +538,7 @@ void tud_task_ext(uint32_t timeout_ms, bool in_isr)
 
       case DCD_EVENT_XFER_COMPLETE:
       {
+       putBufChar('E');
         // Invoke the class callback associated with the endpoint address
         uint8_t const ep_addr = event.xfer_complete.ep_addr;
         uint8_t const epnum   = tu_edpt_number(ep_addr);
@@ -564,6 +568,7 @@ void tud_task_ext(uint32_t timeout_ms, bool in_isr)
         // NOTE: When plugging/unplugging device, the D+/D- state are unstable and
         // can accidentally meet the SUSPEND condition ( Bus Idle for 3ms ), which result in a series of event
         // e.g suspend -> resume -> unplug/plug. Skip suspend/resume if not connected
+       putBufChar('F');
         if ( _usbd_dev.connected )
         {
           TU_LOG(USBD_DBG, ": Remote Wakeup = %u\r\n", _usbd_dev.remote_wakeup_en);
@@ -575,6 +580,7 @@ void tud_task_ext(uint32_t timeout_ms, bool in_isr)
       break;
 
       case DCD_EVENT_RESUME:
+       putBufChar('G');
         if ( _usbd_dev.connected )
         {
           TU_LOG(USBD_DBG, "\r\n");
@@ -586,6 +592,7 @@ void tud_task_ext(uint32_t timeout_ms, bool in_isr)
       break;
 
       case USBD_EVENT_FUNC_CALL:
+       putBufChar('H');
         TU_LOG(USBD_DBG, "\r\n");
         if ( event.func_call.func ) event.func_call.func(event.func_call.param);
       break;

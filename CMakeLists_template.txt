@@ -131,6 +131,8 @@ set(SOURCES
 ./hw/bsp/board.c
 ./project/usb_descriptors.c
 ./project/main.c
+./project/serialio.c
+./project/stm32Info.c
 ./src/tusb.c
 ./src/common/tusb_fifo.c
 ./src/device/usbd.c

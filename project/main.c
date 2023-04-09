@@ -35,40 +35,35 @@
 #include "stm32h7xx_hal.h"
 #include "board.h"
 
-#if defined(CLION)
-#define __bss_start__ _sbss
-#define __bss_end__ _ebss
-#define __data_start__ _sdata
-#define __data_end__ _edata
-#define __stack _estack
-#define __Main_Stack_Limit _end
-#endif	/* CLION */
-extern char __bss_start__;
-extern char __bss_end__;
-extern char __data_start__;
-extern char __data_end__;
-extern char __stack;
-extern char __Main_Stack_Limit;
+extern char _sbss;
+extern char _ebss;
+extern char _sdata;
+extern char _edata;
+extern char _estack;
+extern char _end;
 
-void stub(void);
-_ssize_t write(int fd  __attribute__((unused)), const char* buf, _ssize_t nbyte);
+//_ssize_t write(int fd  __attribute__((unused)), const char* buf, _ssize_t nbyte);
 unsigned int getSP(void);
 
 //------------- prototypes -------------//
 static void cdc_task(void);
 /*------------- MAIN -------------*/
-extern unsigned int _estack;
+extern uint8_t _estack;
+void fixRef(void);
+
+#include <unistd.h>
 
 int main(void)
 {
- stub();
- board_init();
- char buf[] = "_write\n";
- write(0, buf, sizeof(buf));
+   board_init();
+ //fixRef();
  putstr("start\n");
 
- //unsigned int bss = (unsigned int) (&__bss_end__ - &__bss_start__);
- //unsigned int data = (unsigned int) (&__data_end__ - &__data_start__);
+ char buf[] = "_write\n";
+ write(0, buf, sizeof(buf));
+
+ //unsigned int bss = (unsigned int) (&_ebss - &_sbss);
+ //unsigned int data = (unsigned int) (&_edata- &_sdata);
  unsigned int sp = getSP();
  unsigned int stack = (unsigned int) &_estack;//&__stack;
  unsigned int used = stack - sp;
@@ -94,6 +89,7 @@ int main(void)
 // printf("sysTick load %d\n", (int) SysTick->LOAD);
  PRINT_FUNC();
  initCharBuf();
+ printf("testing\n");
   // init device stack on configured roothub port
   tud_init(BOARD_TUD_RHPORT);
 

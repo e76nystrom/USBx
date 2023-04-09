@@ -21,6 +21,11 @@ set(CMAKE_TRY_COMPILE_TARGET_TYPE STATIC_LIBRARY)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_C_STANDARD 11)
 
+set(CMAKE_C_ARCHIVE_CREATE "<CMAKE_AR> qc <TARGET> <LINK_FLAGS> <OBJECTS>")
+set(CMAKE_C_ARCHIVE_FINISH "<CMAKE_AR> s <TARGET>")
+set(CMAKE_CXX_ARCHIVE_CREATE "<CMAKE_AR> qc <TARGET> <LINK_FLAGS> <OBJECTS>")
+set(CMAKE_CXX_ARCHIVE_FINISH "<CMAKE_AR> s <TARGET>")
+
 #Uncomment for hardware floating point
 #add_compile_definitions(ARM_MATH_CM4;ARM_MATH_MATRIX_CHECK;ARM_MATH_ROUNDING)
 #add_compile_options(-mfloat-abi=hard -mfpu=fpv4-sp-d16)
@@ -61,17 +66,20 @@ add_compile_options(
 -fsingle-precision-constant
 )
 
+#-Wstrict-prototypes
+#-Wno-error=cast-align
+#-Wunused
+#-Werror
+#-Wcast-align
+
 add_compile_options(
 -Wno-error=maybe-uninitialized
--Wno-error=cast-align
--Wno-error=unused-parameter
 -fno-strict-aliasing
+-Wno-error=unused-parameter
 -Wall
 -Wextra
--Werror
 -Wfatal-errors
 -Wdouble-promotion
--Wstrict-prototypes
 -Wstrict-overflow
 -Werror-implicit-function-declaration
 -Wfloat-equal
@@ -81,12 +89,10 @@ add_compile_options(
 -Wsign-compare
 -Wmissing-format-attribute
 -Wunreachable-code
--Wcast-align
 -Wcast-function-type
 -Wcast-qual
 -Wnull-dereference
 -Wuninitialized
--Wunused
 -Wreturn-type
 -Wredundant-decls
 -Os
@@ -118,10 +124,20 @@ include_directories(
         # ../tinyusb/src/class/video/video_device.c
 
 set(SOURCES
-        ./project/exit.s
+        ./project/startup_stm32h743xx.s
+        ./project/main.c
+        ./project/usb_descriptors.c
+        ./project/serialio.c
+        ./project/stm32Info.c
         ./project/getSP.S
-./project/startup_stm32h743xx.s
-./src/portable/synopsys/dwc2/dcd_dwc2.c
+        ./src/portable/synopsys/dwc2/dcd_dwc2.c
+        ./src/tusb.c
+        ./src/common/tusb_fifo.c
+        ./src/device/usbd.c
+        ./src/device/usbd_control.c
+        ./src/class/cdc/cdc_device.c
+        ./hw/bsp/stm32h7/family.c
+        ./hw/bsp/board.c
 ./hw/mcu/st/cmsis_device_h7/Source/Templates/system_stm32h7xx.c
 ./hw/mcu/st/stm32h7xx_hal_driver/Src/stm32h7xx_hal.c
 ./hw/mcu/st/stm32h7xx_hal_driver/Src/stm32h7xx_hal_cortex.c
@@ -133,39 +149,28 @@ set(SOURCES
 ./hw/mcu/st/stm32h7xx_hal_driver/Src/stm32h7xx_hal_uart_ex.c
 ./hw/mcu/st/stm32h7xx_hal_driver/Src/stm32h7xx_hal_pwr.c
 ./hw/mcu/st/stm32h7xx_hal_driver/Src/stm32h7xx_hal_pwr_ex.c
-./hw/bsp/stm32h7/family.c
-./hw/bsp/board.c
-./project/usb_descriptors.c
-./project/main.c
-./project/serialio.c
-./project/stm32Info.c
-./src/tusb.c
-./src/common/tusb_fifo.c
-./src/device/usbd.c
-./src/device/usbd_control.c
-./src/class/cdc/cdc_device.c
-        ./project/stub.c
 )
 
-set(SOURCES1 ./project/stub.c )
-
-#set(CMAKE_C_ARCHIVE_CREATE ( = <CMAKE_AR> qcs <TARGET> <LINK_FLAGS> <OBJECTS>))
-#set(CMAKE_C_ARCHIVE_FINISH ( = true)) # Or any other no-op command
-
-#add_library(srcLib STATIC ${SOURCES1})
+add_subdirectory(systemlib)
 
 #set(LINKER_SCRIPT ${CMAKE_SOURCE_DIR}/stm32h743xx_flash.ld)
 set(LINKER_SCRIPT ${CMAKE_SOURCE_DIR}/STM32H743ZITX_FLASH.ld)
-add_link_options(-Wl,--no-warn-rwx-segments)
-add_link_options(-nostartfiles)
-add_link_options(-lc -Wl,-gc-sections,--print-memory-usage,-Map=${PROJECT_BINARY_DIR}/${PROJECT_NAME}.map)
-add_link_options(-mcpu=cortex-m7 -mthumb -mthumb-interwork)
-#add_link_options(-T ${CMAKE_SOURCE_DIR}/libs.ld)
-#add_link_options(--whole-archive uart.a -Wl,--no-whole-archive)
 add_link_options(-T ${LINKER_SCRIPT})
+add_link_options(-Wl,--no-warn-rwx-segments)
+add_link_options(-Xlinker --gc-sections)
+add_link_options(-lg_nano)
+#add_Link_options(-lc)
+add_link_options(--specs=nosys.specs --specs=nano.specs)
+add_link_options(
+        -Wl,-gc-sections,--print-memory-usage,-Map=${PROJECT_BINARY_DIR}/${PROJECT_NAME}.map)
+add_link_options(-mcpu=cortex-m7 -mthumb -mthumb-interwork)
 
 add_executable(${PROJECT_NAME}.elf ${SOURCES})
 
+target_link_directories(${PROJECT_NAME}.elf PRIVATE cmake-build-debug/systemLib)
+
+target_link_libraries(${PROJECT_NAME}.elf
+        -Wl,--whole-archive systemLib -Wl,--no-whole-archive)
+
 set(HEX_FILE ${PROJECT_BINARY_DIR}/${PROJECT_NAME}.hex)
 set(BIN_FILE ${PROJECT_BINARY_DIR}/${PROJECT_NAME}.bin)
-
