@@ -11,7 +11,6 @@ set(CMAKE_C_COMPILER arm-none-eabi-gcc)
 set(CMAKE_CXX_COMPILER arm-none-eabi-g++)
 set(CMAKE_ASM_COMPILER  arm-none-eabi-gcc)
 set(CMAKE_AR arm-none-eabi-gcc-ar)
-#set(CMAKE_AR gcc-ar)
 set(CMAKE_OBJCOPY arm-none-eabi-objcopy)
 set(CMAKE_OBJDUMP arm-none-eabi-objdump)
 set(SIZE arm-none-eabi-size)
@@ -53,16 +52,18 @@ add_compile_definitions(CFG_TUSB_MCU=OPT_MCU_STM32H7)
 #-mfloat-abi=hard
 #-mfpu=fpv5-d16
 
+set(LTO lto)
+
 add_compile_options(
--flto
+-f${LTO}
 -mthumb
 -mabi=aapcs
 -mcpu=cortex-m7
 -nostdlib
 -nostartfiles
 -ggdb
--fdata-sections
 -ffunction-sections
+-fdata-sections
 -fsingle-precision-constant
 )
 
@@ -126,6 +127,7 @@ include_directories(
 set(SOURCES
         ./project/startup_stm32h743xx.s
         ./project/main.c
+        ./project/fixSys.c
         ./project/usb_descriptors.c
         ./project/serialio.c
         ./project/stm32Info.c
@@ -149,7 +151,7 @@ set(SOURCES
 ./hw/mcu/st/stm32h7xx_hal_driver/Src/stm32h7xx_hal_uart_ex.c
 ./hw/mcu/st/stm32h7xx_hal_driver/Src/stm32h7xx_hal_pwr.c
 ./hw/mcu/st/stm32h7xx_hal_driver/Src/stm32h7xx_hal_pwr_ex.c
-)
+        project/clockConfig.c)
 
 add_subdirectory(systemlib)
 
@@ -158,11 +160,14 @@ set(LINKER_SCRIPT ${CMAKE_SOURCE_DIR}/STM32H743ZITX_FLASH.ld)
 add_link_options(-T ${LINKER_SCRIPT})
 add_link_options(-Wl,--no-warn-rwx-segments)
 add_link_options(-Xlinker --gc-sections)
-add_link_options(-lg_nano)
+add_link_options(-f${LTO})
+#add_link_options(-Xlinker --cref)
+#add_link_options(-lg_nano)
+#add_link_options(-v)
 #add_Link_options(-lc)
 add_link_options(--specs=nosys.specs --specs=nano.specs)
 add_link_options(
-        -Wl,-gc-sections,--print-memory-usage,-Map=${PROJECT_BINARY_DIR}/${PROJECT_NAME}.map)
+        -Wl,--print-memory-usage,-Map=${PROJECT_BINARY_DIR}/${PROJECT_NAME}.map)
 add_link_options(-mcpu=cortex-m7 -mthumb -mthumb-interwork)
 
 add_executable(${PROJECT_NAME}.elf ${SOURCES})

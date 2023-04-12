@@ -259,8 +259,10 @@ __weak void HAL_MspDeInit(void)
   * @param TickPriority: Tick interrupt priority.
   * @retval HAL status
   */
+  uint32_t temp;
 __weak HAL_StatusTypeDef HAL_InitTick(uint32_t TickPriority)
 {
+ temp = TickPriority;
   /* Check uwTickFreq for MisraC 2012 (even if uwTickFreq is a enum type that don't take the value zero)*/
   if((uint32_t)uwTickFreq == 0UL)
   {

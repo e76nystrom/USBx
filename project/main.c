@@ -43,27 +43,34 @@ extern char _estack;
 extern char _end;
 
 //_ssize_t write(int fd  __attribute__((unused)), const char* buf, _ssize_t nbyte);
+void Error_Handler(void);
 unsigned int getSP(void);
 
 //------------- prototypes -------------//
 static void cdc_task(void);
 /*------------- MAIN -------------*/
-extern uint8_t _estack;
-void fixRef(void);
 
 #include <unistd.h>
 
+//#define FIX_SYS
+#if defined(FIX_SYS)
+extern void fixSys(void);
+#endif
+
 int main(void)
 {
-   board_init();
- //fixRef();
+#if defined(FIX_SYS)
+ fixSys();
+#endif
+
+ board_init();
  putstr("start\n");
 
  char buf[] = "_write\n";
  write(0, buf, sizeof(buf));
 
- //unsigned int bss = (unsigned int) (&_ebss - &_sbss);
- //unsigned int data = (unsigned int) (&_edata- &_sdata);
+ unsigned int bss = (unsigned int) (&_ebss - &_sbss);
+ unsigned int data = (unsigned int) (&_edata- &_sdata);
  unsigned int sp = getSP();
  unsigned int stack = (unsigned int) &_estack;//&__stack;
  unsigned int used = stack - sp;
@@ -77,16 +84,25 @@ int main(void)
 // putstr(" stackLimit ");
 // sndhex((unsigned char *) &stackLimit, sizeof(stackLimit));
  putstr("\n");
-// printf("data %u bss %u total %u\n", data, bss, data + bss);
-// printf("stack %08x stackLimit %08x sp %08x\n",
-//        (unsigned int) &__stack, (unsigned int) &__Main_Stack_Limit,
-//        getSP());
-// unsigned int sysClock = HAL_RCC_GetSysClockFreq();
-// unsigned int clockFreq = HAL_RCC_GetHCLKFreq();
-// unsigned int FCY = HAL_RCC_GetPCLK2Freq() * 2;
-//  printf("sys clock %u clock frequency %u FCY %u\n",
-//         sysClock, clockFreq, FCY);
-// printf("sysTick load %d\n", (int) SysTick->LOAD);
+ printf("data %u bss %u total %u\n", data, bss, data + bss);
+ printf("stack %08x sp %08x\n",
+        (unsigned int) &_estack, getSP());
+ unsigned int sysClock = HAL_RCC_GetSysClockFreq();
+ unsigned int clockFreq = HAL_RCC_GetHCLKFreq();
+ unsigned int FCY = HAL_RCC_GetPCLK2Freq() * 2;
+  printf("sys clock %u clock frequency %u FCY %u\n",
+         sysClock, clockFreq, FCY);
+
+ RCC->APB4ENR |= RCC_APB4ENR_SYSCFGEN;
+
+ printf("SYSCFG->PWRCR %08x RCC->APB4ENR %08x PWR->D3CR %08x\n",
+        (unsigned int) SYSCFG->PWRCR, (unsigned int) RCC->APB4ENR,
+        (unsigned int) PWR->D3CR);
+
+ SYSCFG->PWRCR = SYSCFG_PWRCR_ODEN;
+
+ printf("SYSCFG->PWRCR %08x\n", (unsigned int) SYSCFG->PWRCR);
+
  PRINT_FUNC();
  initCharBuf();
  printf("testing\n");
@@ -159,3 +175,24 @@ static void cdc_task(void)
     }
   }
 }
+
+void errHandler(void)
+{
+ __disable_irq();
+ while (1)
+ {
+ }
+}
+
+
+void Error_Handler(void)
+{
+ /* USER CODE BEGIN Error_Handler_Debug */
+ /* User can add his own implementation to report the HAL error return state */
+ __disable_irq();
+ while (1)
+ {
+ }
+ /* USER CODE END Error_Handler_Debug */
+}
+

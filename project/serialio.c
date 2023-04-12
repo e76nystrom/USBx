@@ -75,11 +75,13 @@ void initCharBuf(void)
 
 void putBufChar(char ch)
 {
+ uint32_t priMask = __get_PRIMASK();
  __disable_irq();
  if (charBuf.count < CHAR_BUF_SIZE)
  {
   charBuf.count++;
-  __enable_irq();
+  if (priMask == 0)
+   __enable_irq();
   charBuf.buf[charBuf.fil] = ch;
   charBuf.fil++;
   if (charBuf.fil >= CHAR_BUF_SIZE)
@@ -87,7 +89,8 @@ void putBufChar(char ch)
  }
  else
  {
-  __enable_irq();
+  if (priMask == 0)
+   __enable_irq();
   charBuf.overflow++;
  }
 }

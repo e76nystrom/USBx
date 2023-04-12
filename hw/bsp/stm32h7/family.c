@@ -56,9 +56,21 @@ void OTG_HS_IRQHandler(void)
 
 UART_HandleTypeDef UartHandle;
 
+#define TINY_USB_CLK 1
+
+#if !TINY_USB_CLK
+void SystemClock_Config(void);
+void PeriphCommonClock_Config(void);
+#endif
+
 void board_init(void)
 {
+#if TINY_USB_CLK
   board_stm32h7_clock_init();
+#else
+ SystemClock_Config();
+ PeriphCommonClock_Config();
+#endif
 
   // Enable All GPIOs clocks
   __HAL_RCC_GPIOA_CLK_ENABLE();
@@ -270,8 +282,8 @@ void HardFault_Handler(void)
 
 // Required by __libc_init_array in startup code if we are compiling using
 // -nostdlib/-nostartfiles.
-void _init(void)
-{
-
-}
+//void _init(void)
+//{
+//
+//}
 #endif

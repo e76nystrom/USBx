@@ -61,6 +61,8 @@
 #define USB_OTG_FS                      USB_OTG_HS
 #endif
 
+extern void errHandler(void);
+
 //--------------------------------------------------------------------+
 // RCC Clock
 //--------------------------------------------------------------------+
@@ -69,16 +71,25 @@ static inline void board_stm32h7_clock_init(void)
   RCC_ClkInitTypeDef RCC_ClkInitStruct = { 0 };
   RCC_OscInitTypeDef RCC_OscInitStruct = { 0 };
 
-  /* The PWR block is always enabled on the H7 series- there is no clock
-     enable. For now, use the default VOS3 scale mode (lowest) and limit clock
-     frequencies to avoid potential current draw problems from bus
-     power when using the max clock speeds throughout the chip. */
+ /** Supply configuration update enable */
+ HAL_PWREx_ConfigSupply(PWR_LDO_SUPPLY);
+
+#if 1
+ /** Configure the main internal regulator output voltage */
+ __HAL_PWR_VOLTAGESCALING_CONFIG(PWR_REGULATOR_VOLTAGE_SCALE2);
+ while(!__HAL_PWR_GET_FLAG(PWR_FLAG_VOSRDY)) {}
+
+ /* The PWR block is always enabled on the H7 series- there is no clock
+    enable. For now, use the default VOS3 scale mode (lowest) and limit clock
+    frequencies to avoid potential current draw problems from bus
+    power when using the max clock speeds throughout the chip. */
 
   /* Enable HSE Oscillator and activate PLL1 with HSE as source */
   RCC_OscInitStruct.OscillatorType = RCC_OSCILLATORTYPE_HSE;
-  RCC_OscInitStruct.HSEState = RCC_HSE_ON;
-  RCC_OscInitStruct.HSIState = RCC_HSI_OFF;
-  RCC_OscInitStruct.CSIState = RCC_CSI_OFF;
+  RCC_OscInitStruct.HSEState = RCC_HSE_BYPASS;
+//  RCC_OscInitStruct.HSEState = RCC_HSE_ON;
+//  RCC_OscInitStruct.HSIState = RCC_HSI_OFF;
+//  RCC_OscInitStruct.CSIState = RCC_CSI_OFF;
   RCC_OscInitStruct.PLL.PLLState = RCC_PLL_ON;
   RCC_OscInitStruct.PLL.PLLSource = RCC_PLLSOURCE_HSE;
   RCC_OscInitStruct.PLL.PLLM = HSE_VALUE/1000000;
@@ -108,16 +119,92 @@ static inline void board_stm32h7_clock_init(void)
 
   /* 4 wait states required for 168MHz and VOS3. */
   HAL_RCC_ClockConfig(&RCC_ClkInitStruct, FLASH_LATENCY_4);
+#else
+ /** Configure the main internal regulator output voltage
+ */
+ __HAL_PWR_VOLTAGESCALING_CONFIG(PWR_REGULATOR_VOLTAGE_SCALE1);
+
+ while(!__HAL_PWR_GET_FLAG(PWR_FLAG_VOSRDY)) {}
+
+ __HAL_RCC_SYSCFG_CLK_ENABLE();
+ __HAL_PWR_VOLTAGESCALING_CONFIG(PWR_REGULATOR_VOLTAGE_SCALE0);
+
+ while(!__HAL_PWR_GET_FLAG(PWR_FLAG_VOSRDY)) {}
+
+ /** Initializes the RCC Oscillators according to the specified parameters
+ * in the RCC_OscInitTypeDef structure.
+ */
+ RCC_OscInitStruct.OscillatorType = RCC_OSCILLATORTYPE_HSE;
+ RCC_OscInitStruct.HSEState = RCC_HSE_BYPASS;
+ RCC_OscInitStruct.PLL.PLLState = RCC_PLL_ON;
+ RCC_OscInitStruct.PLL.PLLSource = RCC_PLLSOURCE_HSE;
+ RCC_OscInitStruct.PLL.PLLM = 1;
+ RCC_OscInitStruct.PLL.PLLN = 120;
+ RCC_OscInitStruct.PLL.PLLP = 2;
+ RCC_OscInitStruct.PLL.PLLQ = 4;
+ RCC_OscInitStruct.PLL.PLLR = 2;
+ RCC_OscInitStruct.PLL.PLLRGE = RCC_PLL1VCIRANGE_3;
+ RCC_OscInitStruct.PLL.PLLVCOSEL = RCC_PLL1VCOWIDE;
+ RCC_OscInitStruct.PLL.PLLFRACN = 0;
+ if (HAL_RCC_OscConfig(&RCC_OscInitStruct) != HAL_OK)
+ {
+  errHandler();
+ }
+
+ /** Initializes the CPU, AHB and APB buses clocks
+ */
+ RCC_ClkInitStruct.ClockType = RCC_CLOCKTYPE_HCLK|RCC_CLOCKTYPE_SYSCLK
+                               |RCC_CLOCKTYPE_PCLK1|RCC_CLOCKTYPE_PCLK2
+                               |RCC_CLOCKTYPE_D3PCLK1|RCC_CLOCKTYPE_D1PCLK1;
+ RCC_ClkInitStruct.SYSCLKSource = RCC_SYSCLKSOURCE_PLLCLK;
+ RCC_ClkInitStruct.SYSCLKDivider = RCC_SYSCLK_DIV1;
+ RCC_ClkInitStruct.AHBCLKDivider = RCC_HCLK_DIV4;
+ RCC_ClkInitStruct.APB3CLKDivider = RCC_APB3_DIV1;
+ RCC_ClkInitStruct.APB1CLKDivider = RCC_APB1_DIV1;
+ RCC_ClkInitStruct.APB2CLKDivider = RCC_APB2_DIV1;
+ RCC_ClkInitStruct.APB4CLKDivider = RCC_APB4_DIV1;
+
+ if (HAL_RCC_ClockConfig(&RCC_ClkInitStruct, FLASH_LATENCY_6) != HAL_OK)
+ {
+  errHandler();
+ }
+
+#endif
 
   /* Like on F4, on H7, USB's actual peripheral clock and bus clock are
      separate. However, the main system PLL (PLL1) doesn't have a direct
      connection to the USB peripheral clock to generate 48 MHz, so we do this
      dance. This will connect PLL1's Q output to the USB peripheral clock. */
+#if 0
   RCC_PeriphCLKInitTypeDef RCC_PeriphCLKInitStruct = { 0 };
 
   RCC_PeriphCLKInitStruct.PeriphClockSelection = RCC_PERIPHCLK_USB;
   RCC_PeriphCLKInitStruct.UsbClockSelection = RCC_USBCLKSOURCE_PLL;
   HAL_RCCEx_PeriphCLKConfig(&RCC_PeriphCLKInitStruct);
+#else
+/** Initializes the peripherals clock
+ */
+ RCC_PeriphCLKInitTypeDef PeriphClkInitStruct = {0};
+ PeriphClkInitStruct.PeriphClockSelection = RCC_PERIPHCLK_USB|RCC_PERIPHCLK_USART3;
+ PeriphClkInitStruct.PLL3.PLL3M = 1;
+ PeriphClkInitStruct.PLL3.PLL3N = 24;
+ PeriphClkInitStruct.PLL3.PLL3P = 2;
+ PeriphClkInitStruct.PLL3.PLL3Q = 4;
+ PeriphClkInitStruct.PLL3.PLL3R = 2;
+ PeriphClkInitStruct.PLL3.PLL3RGE = RCC_PLL3VCIRANGE_3;
+ PeriphClkInitStruct.PLL3.PLL3VCOSEL = RCC_PLL3VCOWIDE;
+ PeriphClkInitStruct.PLL3.PLL3FRACN = 0;
+ PeriphClkInitStruct.Usart234578ClockSelection = RCC_USART234578CLKSOURCE_PLL3;
+ PeriphClkInitStruct.UsbClockSelection = RCC_USBCLKSOURCE_PLL3;
+ if (HAL_RCCEx_PeriphCLKConfig(&PeriphClkInitStruct) != HAL_OK)
+ {
+  __disable_irq();
+  while (1)
+  {
+  }
+  //Error_Handler();
+ }
+#endif
 }
 
 static inline void board_stm32h7_post_init(void)
