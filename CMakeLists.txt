@@ -26,15 +26,18 @@ set(CMAKE_CXX_ARCHIVE_CREATE "<CMAKE_AR> qc <TARGET> <LINK_FLAGS> <OBJECTS>")
 set(CMAKE_CXX_ARCHIVE_FINISH "<CMAKE_AR> s <TARGET>")
 
 #Uncomment for hardware floating point
-#add_compile_definitions(ARM_MATH_CM4;ARM_MATH_MATRIX_CHECK;ARM_MATH_ROUNDING)
-#add_compile_options(-mfloat-abi=hard -mfpu=fpv4-sp-d16)
-#add_link_options(-mfloat-abi=hard -mfpu=fpv4-sp-d16)
+add_compile_definitions(ARM_MATH_CM4;ARM_MATH_MATRIX_CHECK;ARM_MATH_ROUNDING)
+add_compile_options(-mfloat-abi=hard -mfpu=fpv4-sp-d16)
+add_link_options(-mfloat-abi=hard -mfpu=fpv4-sp-d16)
 
 #Uncomment for software floating point
 #add_compile_options(-mfloat-abi=soft)
 
 add_compile_definitions(STM32H743xx)
 add_compile_definitions(STM32H7)
+add_compile_definitions(USE_RTOS=0)
+add_compile_definitions(CUBE_INIT_CLK=1)
+add_compile_definitions(TINY_USB_CLK=0)
 add_compile_definitions(HSE_VALUE=8000000)
 add_compile_definitions(BOARD_TUD_RHPORT=0)
 add_compile_definitions(CFG_TUSB_MCU=OPT_MCU_STM32H7)
@@ -62,6 +65,7 @@ add_compile_options(
 -nostdlib
 -nostartfiles
 -ggdb
+-O0
 -ffunction-sections
 -fdata-sections
 -fsingle-precision-constant
@@ -101,6 +105,7 @@ add_compile_options(
 )
 
 include_directories(
+        ./Core/Inc
         ./hw
         ./hw/bsp/stm32h7
         ./hw/bsp/stm32h7/boards/stm32h743nucleo
@@ -124,8 +129,13 @@ include_directories(
         # ../tinyusb/src/class/vendor/vendor_device.c
         # ../tinyusb/src/class/video/video_device.c
 
-set(SOURCES
-        ./project/startup_stm32h743xx.s
+#./project/startup_stm32h743xx.s
+#./Drivers/STM32H7xx_HAL_Driver/Src/stm32h7xx_hal.c
+
+ set(SOURCES
+         ./Core/Startup/startup_stm32h743zitx.s
+         ./Core/Src/system_stm32h7xx.c
+         ./Core/src/main.c
         ./project/main.c
         ./project/fixSys.c
         ./project/usb_descriptors.c
@@ -140,7 +150,7 @@ set(SOURCES
         ./src/class/cdc/cdc_device.c
         ./hw/bsp/stm32h7/family.c
         ./hw/bsp/board.c
-./hw/mcu/st/cmsis_device_h7/Source/Templates/system_stm32h7xx.c
+
 ./hw/mcu/st/stm32h7xx_hal_driver/Src/stm32h7xx_hal.c
 ./hw/mcu/st/stm32h7xx_hal_driver/Src/stm32h7xx_hal_cortex.c
 ./hw/mcu/st/stm32h7xx_hal_driver/Src/stm32h7xx_hal_dma.c
@@ -151,7 +161,9 @@ set(SOURCES
 ./hw/mcu/st/stm32h7xx_hal_driver/Src/stm32h7xx_hal_uart_ex.c
 ./hw/mcu/st/stm32h7xx_hal_driver/Src/stm32h7xx_hal_pwr.c
 ./hw/mcu/st/stm32h7xx_hal_driver/Src/stm32h7xx_hal_pwr_ex.c
-        project/clockConfig.c)
+)
+#./hw/mcu/st/cmsis_device_h7/Source/Templates/system_stm32h7xx.c
+#.project/clockConfig.c
 
 add_subdirectory(systemlib)
 
@@ -165,7 +177,9 @@ add_link_options(-f${LTO})
 #add_link_options(-lg_nano)
 #add_link_options(-v)
 #add_Link_options(-lc)
-add_link_options(--specs=nosys.specs --specs=nano.specs)
+add_link_options(-u printf_float)
+add_link_options(--specs=nosys.specs)
+#add_link_options(--specs=nano.specs)
 add_link_options(
         -Wl,--print-memory-usage,-Map=${PROJECT_BINARY_DIR}/${PROJECT_NAME}.map)
 add_link_options(-mcpu=cortex-m7 -mthumb -mthumb-interwork)
