@@ -56,20 +56,20 @@ void OTG_HS_IRQHandler(void)
 
 UART_HandleTypeDef UartHandle;
 
-#define TINY_USB_CLK 1
 
-#if !TINY_USB_CLK
+#if TINY_USB_CLK == 0
 void SystemClock_Config(void);
-void PeriphCommonClock_Config(void);
+void usbClock_Config(void);
 #endif
-
+extern void board_stm32h7_clock_init(void);
 void board_init(void)
 {
-#if TINY_USB_CLK
+
+#if CUBE_INIT_CLK == 0
   board_stm32h7_clock_init();
 #else
  SystemClock_Config();
- PeriphCommonClock_Config();
+ usbClock_Config();
 #endif
 
   // Enable All GPIOs clocks

@@ -35,6 +35,8 @@
 #include "dwc2_type.h"
 #include "serialio.h"
 
+static const char *file = __FILE_NAME__;
+
 // Following symbols must be defined by port header
 // - _dwc2_controller[]: array of controllers
 // - DWC2_EP_MAX: largest EP counts of all controllers
@@ -128,7 +130,8 @@ static void update_grxfsiz(uint8_t rhport)
 // Start of Bus Reset
 static void bus_reset(uint8_t rhport)
 {
- putBufChar('R');
+ trcTrc(file, __LINE__, __FUNCTION__);
+ // putBufChar('R');
   dwc2_regs_t * dwc2     = DWC2_REG(rhport);
   uint8_t const ep_count = _dwc2_controller[rhport].ep_count;
 
@@ -356,9 +359,11 @@ void print_dwc2_info(dwc2_regs_t * dwc2)
 static void reset_core(dwc2_regs_t * dwc2)
 {
   // reset core
-  dwc2->grstctl |= GRSTCTL_CSRST;
+ unsigned int x0 = dwc2->grstctl;
+ x0 |= GRSTCTL_CSRST;
+ dwc2->grstctl = x0;
 
-  // wait for reset bit is cleared
+ // wait for reset bit is cleared
   // TODO version 4.20a should wait for RESET DONE mask
   while (dwc2->grstctl & GRSTCTL_CSRST) { }
 
@@ -1015,7 +1020,8 @@ static void handle_rxflvl_irq(uint8_t rhport)
     case GRXSTS_PKTSTS_GLOBALOUTNAK: break;
 
     case GRXSTS_PKTSTS_SETUPRX:
-     putBufChar('1');
+     trcTrc(file, __LINE__, "SETUPRX");
+     // putBufChar('1');
       // Setup packet received
 
       // We can receive up to three setup packets in succession, but
@@ -1025,14 +1031,16 @@ static void handle_rxflvl_irq(uint8_t rhport)
     break;
 
     case GRXSTS_PKTSTS_SETUPDONE:
-     putBufChar('2');
+     trcTrc(file, __LINE__, "SETUPDONE");
+     // putBufChar('2');
       // Setup packet done (Interrupt)
       epout->doeptsiz |= (3 << DOEPTSIZ_STUPCNT_Pos);
     break;
 
     case GRXSTS_PKTSTS_OUTRX:
     {
-     putBufChar('3');
+     trcTrc1(file, __LINE__, "OUTRX", bcnt);
+     // putBufChar('3');
       // Out packet received
       xfer_ctl_t *xfer = XFER_CTL_BASE(epnum, TUSB_DIR_OUT);
 
@@ -1066,7 +1074,8 @@ static void handle_rxflvl_irq(uint8_t rhport)
 
     // Out packet done (Interrupt)
     case GRXSTS_PKTSTS_OUTDONE:
-     putBufChar('4');
+     trcTrc(file, __LINE__, "OUTDONE");
+     // putBufChar('4');
         // Occurred on STM32L47 with dwc2 version 3.10a but not found on other version like 2.80a or 3.30a
         // May (or not) be 3.10a specific feature/bug or depending on MCU configuration
         // XFRC complete is additionally generated when
@@ -1108,7 +1117,7 @@ static void handle_epout_irq (uint8_t rhport)
   {
     if ( dwc2->daint & TU_BIT(DAINT_OEPINT_Pos + n) )
     {
-     putBufChar('0' + n);
+     //putBufChar('0' + n);
       dwc2_epout_t* epout = &dwc2->epout[n];
 
       uint32_t const doepint = epout->doepint;
@@ -1116,6 +1125,7 @@ static void handle_epout_irq (uint8_t rhport)
       // SETUP packet Setup Phase done.
       if ( doepint & DOEPINT_STUP )
       {
+       trcTrc1(file, __LINE__, "DOEPINT_STUP", n);
         uint32_t clear_flag = DOEPINT_STUP;
 
         // STPKTRX is only available for version from 3_00a
@@ -1131,6 +1141,7 @@ static void handle_epout_irq (uint8_t rhport)
       // OUT XFER complete
       if ( epout->doepint & DOEPINT_XFRC )
       {
+       trcTrc1(file, __LINE__, "DOEPINT_XFRC", n);
         epout->doepint = DOEPINT_XFRC;
 
         xfer_ctl_t *xfer = XFER_CTL_BASE(n, TUSB_DIR_OUT);
@@ -1162,13 +1173,14 @@ static void handle_epin_irq (uint8_t rhport)
   {
     if ( dwc2->daint & TU_BIT(DAINT_IEPINT_Pos + n) )
     {
-     putBufChar('0' + n);
+          // putBufChar('0' + n);
       // IN XFER complete (entire xfer).
       xfer_ctl_t *xfer = XFER_CTL_BASE(n, TUSB_DIR_IN);
 
       if ( epin[n].diepint & DIEPINT_XFRC )
       {
-        epin[n].diepint = DIEPINT_XFRC;
+       trcTrc2(file, __LINE__, "DIEPINT_XFRC", n, xfer->total_len);
+       epin[n].diepint = DIEPINT_XFRC;
 
         // EP0 can only handle one packet
         if ( (n == 0) && ep0_pending[TUSB_DIR_IN] )
@@ -1185,6 +1197,7 @@ static void handle_epin_irq (uint8_t rhport)
       // XFER FIFO empty
       if ( (epin[n].diepint & DIEPINT_TXFE) && (dwc2->diepempmsk & (1 << n)) )
       {
+       trcTrc1(file, __LINE__, "DIEPINT_TXFE", n);
         // diepint's TXFE bit is read-only, software cannot clear it.
         // It will only be cleared by hardware when written bytes is more than
         // - 64 bytes or
@@ -1222,6 +1235,7 @@ static void handle_epin_irq (uint8_t rhport)
         // Turn off TXFE if all bytes are written.
         if ( ((epin[n].dieptsiz & DIEPTSIZ_XFRSIZ_Msk) >> DIEPTSIZ_XFRSIZ_Pos) == 0 )
         {
+         trcTrc1(file, __LINE__, "DIEPINT_DONE", n);
           dwc2->diepempmsk &= ~(1 << n);
         }
       }
@@ -1231,7 +1245,11 @@ static void handle_epin_irq (uint8_t rhport)
 
 void dcd_int_handler(uint8_t rhport)
 {
- putBufChar('#');
+ dbg0Set();
+ isrStart += 1;
+ trcISR(0, isrStart);
+// trcTrc(file, __LINE__, __FUNCTION__);
+ // putBufChar('#');
  dwc2_regs_t *dwc2 = DWC2_REG(rhport);
 
   uint32_t const int_mask = dwc2->gintmsk;
@@ -1239,7 +1257,8 @@ void dcd_int_handler(uint8_t rhport)
 
   if(int_status & GINTSTS_USBRST)
   {
-   putBufChar('a');
+   trcTrc(file, __LINE__, "USBRST");
+   // putBufChar('a');
    // USBRST is start of reset.
     dwc2->gintsts = GINTSTS_USBRST;
     bus_reset(rhport);
@@ -1247,7 +1266,8 @@ void dcd_int_handler(uint8_t rhport)
 
   if(int_status & GINTSTS_ENUMDNE)
   {
-   putBufChar('b');
+   trcTrc(file, __LINE__, "ENUMDNE");
+   // putBufChar('b');
     // ENUMDNE is the end of reset where speed of the link is detected
 
     dwc2->gintsts = GINTSTS_ENUMDNE;
@@ -1275,14 +1295,16 @@ void dcd_int_handler(uint8_t rhport)
 
   if(int_status & GINTSTS_USBSUSP)
   {
-   putBufChar('c');
+   trcTrc(file, __LINE__, "USBSUSP");
+   // putBufChar('c');
     dwc2->gintsts = GINTSTS_USBSUSP;
     dcd_event_bus_signal(rhport, DCD_EVENT_SUSPEND, true);
   }
 
   if(int_status & GINTSTS_WKUINT)
   {
-   putBufChar('d');
+   trcTrc(file, __LINE__, "WKUINT");
+   // putBufChar('d');
    dwc2->gintsts = GINTSTS_WKUINT;
     dcd_event_bus_signal(rhport, DCD_EVENT_RESUME, true);
   }
@@ -1292,7 +1314,8 @@ void dcd_int_handler(uint8_t rhport)
 
   if(int_status & GINTSTS_OTGINT)
   {
-   putBufChar('e');
+   trcTrc(file, __LINE__, "OTGINT");
+   // putBufChar('e');
     // OTG INT bit is read-only
     uint32_t const otg_int = dwc2->gotgint;
 
@@ -1306,7 +1329,8 @@ void dcd_int_handler(uint8_t rhport)
 
   if(int_status & GINTSTS_SOF)
   {
-   putBufChar('f');
+   trcTrc(file, __LINE__, "SOF");
+   // putBufChar('f');
     dwc2->gotgint = GINTSTS_SOF;
 
     if (_sof_en)
@@ -1326,7 +1350,8 @@ void dcd_int_handler(uint8_t rhport)
   // RxFIFO non-empty interrupt handling.
   if(int_status & GINTSTS_RXFLVL)
   {
-   putBufChar('g');
+   trcTrc(file, __LINE__, "RXFLVL");
+   // putBufChar('g');
     // RXFLVL bit is read-only
 
     // Mask out RXFLVL while reading data from FIFO
@@ -1353,7 +1378,8 @@ void dcd_int_handler(uint8_t rhport)
   // OUT endpoint interrupt handling.
   if(int_status & GINTSTS_OEPINT)
   {
-   putBufChar('h');
+   trcTrc(file, __LINE__, "OEPINT");
+   // putBufChar('h');
     // OEPINT is read-only, clear using DOEPINTn
     handle_epout_irq(rhport);
   }
@@ -1361,7 +1387,8 @@ void dcd_int_handler(uint8_t rhport)
   // IN endpoint interrupt handling.
   if(int_status & GINTSTS_IEPINT)
   {
-   putBufChar('i');
+   trcTrc(file, __LINE__, "IEPINT");
+   // putBufChar('i');
     // IEPINT bit read-only, clear using DIEPINTn
     handle_epin_irq(rhport);
   }
@@ -1371,7 +1398,11 @@ void dcd_int_handler(uint8_t rhport)
   //    printf("      IISOIXFR!\r\n");
   ////    TU_LOG(DWC2_DEBUG, "      IISOIXFR!\r\n");
   //  }
- putBufChar('*');
+ //trcTrc(file, __LINE__, "exit isr");
+ //putBufChar('*');
+ isrEnd += 1;
+ trcISR(1, isrEnd);
+ dbg0Clr();
 }
 
 #endif

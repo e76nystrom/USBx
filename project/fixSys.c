@@ -4,6 +4,7 @@
 
 #include <sys/stat.h>
 #include <unistd.h>
+#include <sys/signal.h>
 
 void fixSys(void)
 {
@@ -11,5 +12,10 @@ void fixSys(void)
  fstat(0, &sbuf);
 
  if (isatty(0))
-  ;
+ {}
+
+ kill(0, 0);
+
+ if (getpid())
+ {}
 }
