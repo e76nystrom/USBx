@@ -113,6 +113,7 @@ include_directories(
         ./hw/mcu/st/stm32h7xx_hal_driver/Inc
         ./lib/CMSIS_5/CMSIS/Core/Include
         ./project
+        ./project/include
         ./src
         ./hw/bsp
 )
@@ -140,7 +141,8 @@ include_directories(
         ./project/fixSys.c
         ./project/usb_descriptors.c
         ./project/serialio.c
-        ./project/stm32Info.c
+         ./project/trace.c
+         project/stm32Info.c
         ./project/getSP.S
         ./src/portable/synopsys/dwc2/dcd_dwc2.c
         ./src/tusb.c

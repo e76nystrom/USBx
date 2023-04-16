@@ -258,9 +258,10 @@ int board_uart_write(void const * buf, int len)
   return len;
 }
 
-#if 1
+#if !defined(USB)
 #if CFG_TUSB_OS == OPT_OS_NONE
 volatile uint32_t system_ticks = 0;
+
 void SysTick_Handler(void)
 {
   HAL_IncTick();
@@ -274,7 +275,7 @@ uint32_t board_millis(void)
 }
 #endif
 
-#if 1
+#if !defined(USB)
 void HardFault_Handler(void)
 {
   __asm("BKPT #0\n");

@@ -98,7 +98,7 @@
 #else
   #define DWC2_EP_MAX   EP_MAX_FS
 #endif
-#include "serialio.h"
+
 // On STM32 for consistency we associate
 // - Port0 to OTG_FS, and Port1 to OTG_HS
 static const dwc2_controller_t _dwc2_controller[] =

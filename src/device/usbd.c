@@ -34,7 +34,7 @@
 
 #include "device/usbd.h"
 #include "device/usbd_pvt.h"
-#include "serialio.h"
+#include "trace.h"
 
 static const char *file = __FILE_NAME__;
 

@@ -38,7 +38,9 @@ extern "C" {
 //--------------------------------------------------------------------+
 
 // Init device stack
+#if !defined(USB)
 bool tud_init (uint8_t rhport);
+#endif  /* USB */
 
 // Check if device stack is already initialized
 bool tud_inited(void);

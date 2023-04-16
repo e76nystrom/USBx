@@ -19,7 +19,7 @@
 #include "stm32h743xx.h"
 #endif
 
-#include "stm32Info.h"
+#include "include/stm32Info.h"
 
 #if defined(ARDUINO_ARCH_STM32)
 #include "monitorSTM32.h"
@@ -27,7 +27,7 @@
 #define newline newLine
 #else
 //#include "config.h"
-#include "serialio.h"
+#include "include/serialio.h"
 #define getNum getnum
 #endif	/* ARDUINO_ARCH_AVR */
 

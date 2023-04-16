@@ -1,32 +1,20 @@
 //
-// Created by Eric on 4/3/2023.
+// Created by Eric on 4/15/2023.
 //
+
+#ifndef USBX_TRACE_H
+#define USBX_TRACE_H
+
 #include "main.h"
 
-#ifndef USBTEST2_SERIALIO_H
-#define USBTEST2_SERIALIO_H
-
-uint32_t dbgTxEmpty(void);
-void dbgTxSend(char ch);
-
-void putx(char c);
 void putstr(const char *p);
-void sndhex(unsigned char *p, int size);
-void newline(void);
-void flushBuf(void);
-void dumpBuf(unsigned long *p, unsigned int len);
-
-void initCharBuf(void);
-void putBufChar(char ch);
-void putBufStr(const char *s);
-void pollBufChar(void);
 
 void trcDisplay(void);
 
 void printFunc(const char *file, int line, const char * func);
 
 //#define PRINT_FUNC() printf("%-72s %4d %-20s\n", __FILE__, __LINE__, __func__)
-#define PRINT_FUNC() printFunc(__FILE_NAME__, __LINE__, __func__)
+#define PRINT_FUNC() printFunc(file, __LINE__, __func__)
 
 struct s_generic
 {
@@ -112,18 +100,15 @@ inline void trcRx(uint32_t val1  __attribute__((unused)))
 
 void trcInit(void);
 
+#if !defined(USB)
 inline void dbg0Set() {Dbg0_GPIO_Port->BSRR = Dbg0_Pin;}
 inline void dbg0Clr() {Dbg0_GPIO_Port->BSRR = (Dbg0_Pin << 16);}
 
 inline void dbg2Set() {Dbg2_GPIO_Port->BSRR = Dbg2_Pin;}
 inline void dbg2Clr() {Dbg2_GPIO_Port->BSRR = (Dbg2_Pin << 16);}
+#endif  /* USB */
 
 extern int isrStart;
 extern int isrEnd;
 
-void resetCnt();
-void startCnt();
-void stopCnt();
-unsigned int getCycles();
-
-#endif // USBTEST2_SERIALIO_H
+#endif //USBX_TRACE_H

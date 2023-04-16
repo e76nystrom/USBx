@@ -29,8 +29,6 @@
 #endif
 
 #include "main.h"
-#include "usart.h"
-#include "gpio.h"
 
 /* USER CODE END Includes */
 

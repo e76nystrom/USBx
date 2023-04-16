@@ -31,11 +31,13 @@
 #include "bsp/board.h"
 #include "tusb.h"
 
-#include "serialio.h"
+#include "include/serialio.h"
 #include "stm32h7xx_hal.h"
 #include "board.h"
-#include "stm32Info.h"
-#include "serialio.h"
+#include "include/stm32Info.h"
+#include "trace.h"
+
+static const char *file = __FILE_NAME__;
 
 extern char _sbss;
 extern char _ebss;

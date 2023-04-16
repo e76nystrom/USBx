@@ -32,6 +32,8 @@
 #include "device/usbd_pvt.h"
 
 #include "cdc_device.h"
+#include "trace.h"
+static const char *file = __FILE_NAME__;
 
 //--------------------------------------------------------------------+
 // MACRO CONSTANT TYPEDEF
@@ -224,6 +226,7 @@ bool tud_cdc_n_write_clear (uint8_t itf)
 //--------------------------------------------------------------------+
 void cdcd_init(void)
 {
+ PRINT_FUNC();
   tu_memclr(_cdcd_itf, sizeof(_cdcd_itf));
 
   for(uint8_t i=0; i<CFG_TUD_CDC; i++)
@@ -253,6 +256,7 @@ void cdcd_init(void)
 
 void cdcd_reset(uint8_t rhport)
 {
+ PRINT_FUNC();
   (void) rhport;
 
   for(uint8_t i=0; i<CFG_TUD_CDC; i++)
@@ -268,6 +272,7 @@ void cdcd_reset(uint8_t rhport)
 
 uint16_t cdcd_open(uint8_t rhport, tusb_desc_interface_t const * itf_desc, uint16_t max_len)
 {
+ PRINT_FUNC();
   // Only support ACM subclass
   TU_VERIFY( TUSB_CLASS_CDC                           == itf_desc->bInterfaceClass &&
              CDC_COMM_SUBCLASS_ABSTRACT_CONTROL_MODEL == itf_desc->bInterfaceSubClass, 0);
@@ -334,6 +339,7 @@ uint16_t cdcd_open(uint8_t rhport, tusb_desc_interface_t const * itf_desc, uint1
 // return false to stall control endpoint (e.g unsupported request)
 bool cdcd_control_xfer_cb(uint8_t rhport, uint8_t stage, tusb_control_request_t const * request)
 {
+ PRINT_FUNC();
   // Handle class request only
   TU_VERIFY(request->bmRequestType_bit.type == TUSB_REQ_TYPE_CLASS);
 
@@ -416,6 +422,7 @@ bool cdcd_control_xfer_cb(uint8_t rhport, uint8_t stage, tusb_control_request_t 
 
 bool cdcd_xfer_cb(uint8_t rhport, uint8_t ep_addr, xfer_result_t result, uint32_t xferred_bytes)
 {
+ PRINT_FUNC();
   (void) result;
 
   uint8_t itf;

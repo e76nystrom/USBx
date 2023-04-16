@@ -1,2 +1,11 @@
 cscope.*
 cmake-build-debug/*
+Drivers/*
+Middlewares/*
+USB_DEVICE/*
+
+*.bak
+
+trc.txt
+*~
+*#*
