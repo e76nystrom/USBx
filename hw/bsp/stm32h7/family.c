@@ -49,13 +49,11 @@ void OTG_HS_IRQHandler(void)
   tud_int_handler(1);
 }
 
-
 //--------------------------------------------------------------------+
 // MACRO TYPEDEF CONSTANT ENUM
 //--------------------------------------------------------------------+
 
 UART_HandleTypeDef UartHandle;
-
 
 #if TINY_USB_CLK == 0
 void SystemClock_Config(void);

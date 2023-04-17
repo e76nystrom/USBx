@@ -1,13 +1,18 @@
 #include "stm32h743xx.h"
 #include "trace.h"
+
+//#define TRACE
+
+#if defined(TRACE)
+
 #include <stdio.h>
 #include <string.h>
-
-T_TRC_QUE trcQue;
 
 #if defined(USB)
 static unsigned int sysClock;
 #endif  /* USB */
+
+T_TRC_QUE trcQue;
 
 void trcInit(void)
 {
@@ -150,3 +155,27 @@ void trcISR(int flag, int count)
   trcQue.fil = 0;
  trcQue.count += 1;
 }
+
+#else   /* TRACE */
+
+inline void trcInit(void) {}
+inline void trcDisplay(void) {}
+inline void printFunc(const char *file  __attribute__((unused)),
+		      int line  __attribute__((unused)),
+		      const char *func __attribute__((unused))) {}
+inline void trcTrc(const char *file  __attribute__((unused)),
+		   int line  __attribute__((unused)),
+		   const char *func __attribute__((unused))) {}
+inline void trcTrc1(const char *file  __attribute__((unused)),
+		    uint16_t line  __attribute__((unused)),
+		    const char *func  __attribute__((unused)),
+		    uint16_t val __attribute__((unused))) {}
+inline void trcTrc2(const char *file  __attribute__((unused)),
+		    uint16_t line  __attribute__((unused)),
+		    const char *func  __attribute__((unused)),
+		    uint16_t val1  __attribute__((unused)),
+		    uint16_t val2 __attribute__((unused))) {}
+inline void trcISR(int flag  __attribute__((unused)),
+		   int count __attribute__((unused))) {}
+
+#endif  /* TRACE */

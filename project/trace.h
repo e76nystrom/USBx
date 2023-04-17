@@ -6,12 +6,20 @@
 #define USBX_TRACE_H
 
 #include "main.h"
-
+#if !defined(USB)
+#include "serialio.h"
+#else
 void putstr(const char *p);
+#endif  /* USB */
 
+void trcInit(void);
 void trcDisplay(void);
-
 void printFunc(const char *file, int line, const char * func);
+void trcTrc(const char *file, int line, const char *func);
+void trcTrc1(const char *file, uint16_t line, const char *func, uint16_t val);
+void trcTrc2(const char *file, uint16_t line,
+             const char *func, uint16_t val1, uint16_t val2);
+void trcISR(int flag, int count);
 
 //#define PRINT_FUNC() printf("%-72s %4d %-20s\n", __FILE__, __LINE__, __func__)
 #define PRINT_FUNC() printFunc(file, __LINE__, __func__)
@@ -82,12 +90,6 @@ typedef struct s_TrcQue
 
 extern T_TRC_QUE trcQue;
 
-void trcTrc(const char *file, int line, const char *func);
-void trcTrc1(const char *file, uint16_t line, const char *func, uint16_t val);
-void trcTrc2(const char *file, uint16_t line,
-             const char *func, uint16_t val1, uint16_t val2);
-void trcISR(int flag, int count);
-
 inline void trcRx(uint32_t val1  __attribute__((unused)))
 {
  P_TRC_MSG p = &trcQue.data[trcQue.fil];
@@ -97,8 +99,6 @@ inline void trcRx(uint32_t val1  __attribute__((unused)))
  trcQue.fil &= ~(MAX_TRC_MSG - 1);
  trcQue.count += 1;
 }
-
-void trcInit(void);
 
 #if !defined(USB)
 inline void dbg0Set() {Dbg0_GPIO_Port->BSRR = Dbg0_Pin;}
