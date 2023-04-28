@@ -149,7 +149,8 @@ include_directories(
         ./src/common/tusb_fifo.c
         ./src/device/usbd.c
         ./src/device/usbd_control.c
-        ./src/class/cdc/cdc_device.c
+         ./src/class/cdc/cdc_device.c
+         ./src/class/vendor/vendor_device.c
         ./hw/bsp/stm32h7/family.c
         ./hw/bsp/board.c
 

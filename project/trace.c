@@ -1,7 +1,16 @@
+#if defined(NUCLEOH743)
 #include "stm32h743xx.h"
+#endif  /* NUCLEO743 */
+
+#if defined(NUCLEOH723)
+#include "stm32h723xx.h"
+#endif  /* NUCLEO723 */
+
 #include "trace.h"
 
-//#define TRACE
+#if !defined(USB)
+#define TRACE
+#endif  /* USB */
 
 #if defined(TRACE)
 

@@ -30,6 +30,7 @@
 
 #include "bsp/board.h"
 #include "tusb.h"
+#include "tusb_config.h"
 
 #include "include/serialio.h"
 #include "stm32h7xx_hal.h"
@@ -230,6 +231,36 @@ static void echo_serial_port(uint8_t itf, uint8_t buf[], uint32_t count)
   tud_cdc_n_write_flush(itf);
 }
 
+void prtBuf(unsigned char *p, int size)
+{
+ char col;
+
+ col = 16;			/* number of columns */
+ while (size != 0)		/* while not done */
+ {
+  --size;			/* count off data sent */
+  if (col == 16)		/* if column 0 */
+  {
+   printf("%8x  ", (unsigned int) p); /* output address */
+  }
+  printf("%2x", *p++);		/* output value */
+  --col;			/* count off a column */
+  if (col)			/* if not end of line */
+  {
+//   if ((col & 1) == 0)		/* if even column */
+   printf(" ");		/* output a space */
+  }
+  else				/* if end of line */
+  {
+   col = 16;			/* reset column counter */
+   if (size != 0)		/* if not done */
+    printf("\n");
+  }
+ }
+ if (col != 0)
+  printf("\n");
+}
+#include "class/vendor/vendor_device.h"
 //--------------------------------------------------------------------+
 // USB CDC
 //--------------------------------------------------------------------+
@@ -237,6 +268,19 @@ static void cdc_task(void)
 {
   uint8_t itf;
 
+#if CFG_TUD_VENDOR != 0
+  if (tud_vendor_n_available(0))
+  {
+   uint8_t buf[64];
+
+   int count = (int) tud_vendor_n_read(0, buf, sizeof(buf));
+
+   prtbuf(buf, count);
+
+   count = (int) tud_vendor_write_now(0, buf, count);
+   printf("write %d\n", count);
+  }
+#endif  /* CFG_TUD_VENDOR */
   for (itf = 0; itf < CFG_TUD_CDC; itf++)
   {
     // connected() check for DTR bit
