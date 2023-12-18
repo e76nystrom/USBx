@@ -34,9 +34,10 @@
 #include "device/dcd.h"
 #include "dwc2_type.h"
 #include "trace.h"
+
 #if defined(USB)
-inline void dbg0Set() {Dbg0_GPIO_Port->BSRR = Dbg0_Pin;}
-inline void dbg0Clr() {Dbg0_GPIO_Port->BSRR = (Dbg0_Pin << 16);}
+inline static void dbg0Set(void) {Dbg0_GPIO_Port->BSRR = Dbg0_Pin;}
+inline static void dbg0Clr(void) {Dbg0_GPIO_Port->BSRR = (Dbg0_Pin << 16);}
 #endif  /* USB */
 
 static const char *file = __FILE_NAME__;

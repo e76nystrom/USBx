@@ -4,8 +4,6 @@ set(CMAKE_SYSTEM_VERSION 1)
 set(CMAKE_VERBOSE_MAKEFILE on)
 cmake_minimum_required(VERSION 3.25)
 
-project(USBx LANGUAGES C CXX ASM)
-
 # specify cross-compilers and tools
 set(CMAKE_C_COMPILER arm-none-eabi-gcc)
 set(CMAKE_CXX_COMPILER arm-none-eabi-g++)
@@ -15,6 +13,8 @@ set(CMAKE_OBJCOPY arm-none-eabi-objcopy)
 set(CMAKE_OBJDUMP arm-none-eabi-objdump)
 set(SIZE arm-none-eabi-size)
 set(CMAKE_TRY_COMPILE_TARGET_TYPE STATIC_LIBRARY)
+
+project(USBx LANGUAGES C CXX ASM)
 
 # project settings
 set(CMAKE_CXX_STANDARD 17)
@@ -41,6 +41,7 @@ add_compile_definitions(TINY_USB_CLK=0)
 add_compile_definitions(HSE_VALUE=8000000)
 add_compile_definitions(BOARD_TUD_RHPORT=0)
 add_compile_definitions(CFG_TUSB_MCU=OPT_MCU_STM32H7)
+add_compile_definitions(TRACE)
 
 # add_compile_options(-flto -mthumb -mabi=aapcs -mcpu=cortex-m7
 #         -mfloat-abi=hard -mfpu=fpv5-d16 -nostdlib -nostartfiles)
