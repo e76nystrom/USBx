@@ -27,8 +27,8 @@ set(CMAKE_CXX_ARCHIVE_FINISH "<CMAKE_AR> s <TARGET>")
 
 #Uncomment for hardware floating point
 add_compile_definitions(ARM_MATH_CM4;ARM_MATH_MATRIX_CHECK;ARM_MATH_ROUNDING)
-add_compile_options(-mfloat-abi=hard -mfpu=fpv4-sp-d16)
-add_link_options(-mfloat-abi=hard -mfpu=fpv4-sp-d16)
+add_compile_options(-mfloat-abi=hard -mfpu=fpv5-d16)
+add_link_options(-mfloat-abi=hard -mfpu=fpv5-d16)
 
 #Uncomment for software floating point
 #add_compile_options(-mfloat-abi=soft)
@@ -63,7 +63,6 @@ add_compile_options(
 -mthumb
 -mabi=aapcs
 -mcpu=cortex-m7
--nostdlib
 -nostartfiles
 -ggdb
 -O0
@@ -138,22 +137,22 @@ include_directories(
          ./Core/Startup/startup_stm32h743zitx.s
          ./Core/Src/system_stm32h7xx.c
          ./Core/src/main.c
-        ./project/main.c
-        ./project/fixSys.c
-        ./project/usb_descriptors.c
-        ./project/serialio.c
+         ./project/main.c
+         ./project/fixSys.c
+         ./project/usb_descriptors.c
+         ./project/serialio.c
          ./project/trace.c
          project/stm32Info.c
-        ./project/getSP.S
-        ./src/portable/synopsys/dwc2/dcd_dwc2.c
-        ./src/tusb.c
-        ./src/common/tusb_fifo.c
-        ./src/device/usbd.c
-        ./src/device/usbd_control.c
+         ./project/getSP.S
+         ./src/portable/synopsys/dwc2/dcd_dwc2.c
+         ./src/tusb.c
+         ./src/common/tusb_fifo.c
+         ./src/device/usbd.c
+         ./src/device/usbd_control.c
          ./src/class/cdc/cdc_device.c
          ./src/class/vendor/vendor_device.c
-        ./hw/bsp/stm32h7/family.c
-        ./hw/bsp/board.c
+         ./hw/bsp/stm32h7/family.c
+         ./hw/bsp/board.c
 
 ./hw/mcu/st/stm32h7xx_hal_driver/Src/stm32h7xx_hal.c
 ./hw/mcu/st/stm32h7xx_hal_driver/Src/stm32h7xx_hal_cortex.c
@@ -183,6 +182,7 @@ add_link_options(-f${LTO})
 #add_Link_options(-lc)
 add_link_options(-u printf_float)
 add_link_options(--specs=nosys.specs)
+# add_link_options(-nostdlib)
 #add_link_options(--specs=nano.specs)
 add_link_options(
         -Wl,--print-memory-usage,-Map=${PROJECT_BINARY_DIR}/${PROJECT_NAME}.map)
