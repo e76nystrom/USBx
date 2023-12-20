@@ -33,6 +33,8 @@
 
 #include "device/dcd.h"
 #include "dwc2_type.h"
+
+#if defined(LATHE_USB)
 #include "trace.h"
 
 #if defined(USB)
@@ -41,6 +43,7 @@ inline static void dbg0Clr(void) {Dbg0_GPIO_Port->BSRR = (Dbg0_Pin << 16);}
 #endif  /* USB */
 
 static const char *file = __FILE_NAME__;
+#endif
 
 // Following symbols must be defined by port header
 // - _dwc2_controller[]: array of controllers
@@ -135,8 +138,10 @@ static void update_grxfsiz(uint8_t rhport)
 // Start of Bus Reset
 static void bus_reset(uint8_t rhport)
 {
+#if defined(LATHE_USB)
  trcTrc(file, __LINE__, __FUNCTION__);
  // putBufChar('R');
+#endif
   dwc2_regs_t * dwc2     = DWC2_REG(rhport);
   uint8_t const ep_count = _dwc2_controller[rhport].ep_count;
 
@@ -364,9 +369,13 @@ void print_dwc2_info(dwc2_regs_t * dwc2)
 static void reset_core(dwc2_regs_t * dwc2)
 {
   // reset core
+#if defined(LATHE_USB)
  unsigned int x0 = dwc2->grstctl;
  x0 |= GRSTCTL_CSRST;
  dwc2->grstctl = x0;
+#else
+  dwc2->grstctl |= GRSTCTL_CSRST;
+#endif
 
  // wait for reset bit is cleared
   // TODO version 4.20a should wait for RESET DONE mask
@@ -390,7 +399,9 @@ static bool phy_hs_supported(dwc2_regs_t * dwc2)
 
 static void phy_fs_init(dwc2_regs_t * dwc2)
 {
+#if defined(LATHE_USB)
  PRINT_FUNC();
+#endif
   TU_LOG(DWC2_DEBUG, "Fullspeed PHY init\r\n");
 
   // Select FS PHY
@@ -496,7 +507,9 @@ static bool check_dwc2(dwc2_regs_t * dwc2)
 
 void dcd_init (uint8_t rhport)
 {
+#if defined(LATHE_USB)
  PRINT_FUNC();
+#endif
   // Programming model begins in the last section of the chapter on the USB
   // peripheral in each Reference Manual.
   dwc2_regs_t * dwc2 = DWC2_REG(rhport);
@@ -608,7 +621,9 @@ void dcd_remote_wakeup(uint8_t rhport)
 
 void dcd_connect(uint8_t rhport)
 {
+#if defined(LATHE_USB)
  PRINT_FUNC();
+#endif
   (void) rhport;
   dwc2_regs_t * dwc2 = DWC2_REG(rhport);
   dwc2->dctl &= ~DCTL_SDIS;
@@ -616,7 +631,9 @@ void dcd_connect(uint8_t rhport)
 
 void dcd_disconnect(uint8_t rhport)
 {
+#if defined(LATHE_USB)
  PRINT_FUNC();
+#endif
  (void) rhport;
   dwc2_regs_t * dwc2 = DWC2_REG(rhport);
   dwc2->dctl |= DCTL_SDIS;
@@ -1025,8 +1042,10 @@ static void handle_rxflvl_irq(uint8_t rhport)
     case GRXSTS_PKTSTS_GLOBALOUTNAK: break;
 
     case GRXSTS_PKTSTS_SETUPRX:
+#if defined(LATHE_USB)
      trcTrc(file, __LINE__, "SETUPRX");
      // putBufChar('1');
+#endif
       // Setup packet received
 
       // We can receive up to three setup packets in succession, but
@@ -1036,16 +1055,20 @@ static void handle_rxflvl_irq(uint8_t rhport)
     break;
 
     case GRXSTS_PKTSTS_SETUPDONE:
+#if defined(LATHE_USB)
      trcTrc(file, __LINE__, "SETUPDONE");
      // putBufChar('2');
+#endif
       // Setup packet done (Interrupt)
       epout->doeptsiz |= (3 << DOEPTSIZ_STUPCNT_Pos);
     break;
 
     case GRXSTS_PKTSTS_OUTRX:
     {
+#if defined(LATHE_USB)
      trcTrc1(file, __LINE__, "OUTRX", bcnt);
      // putBufChar('3');
+#endif
       // Out packet received
       xfer_ctl_t *xfer = XFER_CTL_BASE(epnum, TUSB_DIR_OUT);
 
@@ -1079,8 +1102,10 @@ static void handle_rxflvl_irq(uint8_t rhport)
 
     // Out packet done (Interrupt)
     case GRXSTS_PKTSTS_OUTDONE:
+#if defined(LATHE_USB)
      trcTrc(file, __LINE__, "OUTDONE");
      // putBufChar('4');
+#endif
         // Occurred on STM32L47 with dwc2 version 3.10a but not found on other version like 2.80a or 3.30a
         // May (or not) be 3.10a specific feature/bug or depending on MCU configuration
         // XFRC complete is additionally generated when
@@ -1122,7 +1147,9 @@ static void handle_epout_irq (uint8_t rhport)
   {
     if ( dwc2->daint & TU_BIT(DAINT_OEPINT_Pos + n) )
     {
+#if defined(LATHE_USB)
      //putBufChar('0' + n);
+#endif
       dwc2_epout_t* epout = &dwc2->epout[n];
 
       uint32_t const doepint = epout->doepint;
@@ -1130,7 +1157,9 @@ static void handle_epout_irq (uint8_t rhport)
       // SETUP packet Setup Phase done.
       if ( doepint & DOEPINT_STUP )
       {
+#if defined(LATHE_USB)
        trcTrc1(file, __LINE__, "DOEPINT_STUP", n);
+#endif
         uint32_t clear_flag = DOEPINT_STUP;
 
         // STPKTRX is only available for version from 3_00a
@@ -1146,7 +1175,9 @@ static void handle_epout_irq (uint8_t rhport)
       // OUT XFER complete
       if ( epout->doepint & DOEPINT_XFRC )
       {
+#if defined(LATHE_USB)
        trcTrc1(file, __LINE__, "DOEPINT_XFRC", n);
+#endif
         epout->doepint = DOEPINT_XFRC;
 
         xfer_ctl_t *xfer = XFER_CTL_BASE(n, TUSB_DIR_OUT);
@@ -1178,13 +1209,17 @@ static void handle_epin_irq (uint8_t rhport)
   {
     if ( dwc2->daint & TU_BIT(DAINT_IEPINT_Pos + n) )
     {
+#if defined(LATHE_USB)
           // putBufChar('0' + n);
+#endif
       // IN XFER complete (entire xfer).
       xfer_ctl_t *xfer = XFER_CTL_BASE(n, TUSB_DIR_IN);
 
       if ( epin[n].diepint & DIEPINT_XFRC )
       {
+#if defined(LATHE_USB)
        trcTrc2(file, __LINE__, "DIEPINT_XFRC", n, xfer->total_len);
+#endif
        epin[n].diepint = DIEPINT_XFRC;
 
         // EP0 can only handle one packet
@@ -1202,7 +1237,9 @@ static void handle_epin_irq (uint8_t rhport)
       // XFER FIFO empty
       if ( (epin[n].diepint & DIEPINT_TXFE) && (dwc2->diepempmsk & (1 << n)) )
       {
+#if defined(LATHE_USB)
        trcTrc1(file, __LINE__, "DIEPINT_TXFE", n);
+#endif
         // diepint's TXFE bit is read-only, software cannot clear it.
         // It will only be cleared by hardware when written bytes is more than
         // - 64 bytes or
@@ -1240,7 +1277,9 @@ static void handle_epin_irq (uint8_t rhport)
         // Turn off TXFE if all bytes are written.
         if ( ((epin[n].dieptsiz & DIEPTSIZ_XFRSIZ_Msk) >> DIEPTSIZ_XFRSIZ_Pos) == 0 )
         {
+#if defined(LATHE_USB)
          trcTrc1(file, __LINE__, "DIEPINT_DONE", n);
+#endif
           dwc2->diepempmsk &= ~(1 << n);
         }
       }
@@ -1250,11 +1289,15 @@ static void handle_epin_irq (uint8_t rhport)
 
 void dcd_int_handler(uint8_t rhport)
 {
+#if defined(LATHE_USB)
+#if defined(USB)
  dbg0Set();
+#endif	/* USB */
  isrStart += 1;
  trcISR(0, isrStart);
 // trcTrc(file, __LINE__, __FUNCTION__);
  // putBufChar('#');
+#endif
  dwc2_regs_t *dwc2 = DWC2_REG(rhport);
 
   uint32_t const int_mask = dwc2->gintmsk;
@@ -1262,8 +1305,10 @@ void dcd_int_handler(uint8_t rhport)
 
   if(int_status & GINTSTS_USBRST)
   {
+#if defined(LATHE_USB)
    trcTrc(file, __LINE__, "USBRST");
    // putBufChar('a');
+#endif
    // USBRST is start of reset.
     dwc2->gintsts = GINTSTS_USBRST;
     bus_reset(rhport);
@@ -1271,8 +1316,10 @@ void dcd_int_handler(uint8_t rhport)
 
   if(int_status & GINTSTS_ENUMDNE)
   {
+#if defined(LATHE_USB)
    trcTrc(file, __LINE__, "ENUMDNE");
    // putBufChar('b');
+#endif
     // ENUMDNE is the end of reset where speed of the link is detected
 
     dwc2->gintsts = GINTSTS_ENUMDNE;
@@ -1300,7 +1347,9 @@ void dcd_int_handler(uint8_t rhport)
 
   if(int_status & GINTSTS_USBSUSP)
   {
+#if defined(LATHE_USB)
    trcTrc(file, __LINE__, "USBSUSP");
+#endif
    // putBufChar('c');
     dwc2->gintsts = GINTSTS_USBSUSP;
     dcd_event_bus_signal(rhport, DCD_EVENT_SUSPEND, true);
@@ -1308,7 +1357,9 @@ void dcd_int_handler(uint8_t rhport)
 
   if(int_status & GINTSTS_WKUINT)
   {
+#if defined(LATHE_USB)
    trcTrc(file, __LINE__, "WKUINT");
+#endif
    // putBufChar('d');
    dwc2->gintsts = GINTSTS_WKUINT;
     dcd_event_bus_signal(rhport, DCD_EVENT_RESUME, true);
@@ -1319,7 +1370,9 @@ void dcd_int_handler(uint8_t rhport)
 
   if(int_status & GINTSTS_OTGINT)
   {
+#if defined(LATHE_USB)
    trcTrc(file, __LINE__, "OTGINT");
+#endif
    // putBufChar('e');
     // OTG INT bit is read-only
     uint32_t const otg_int = dwc2->gotgint;
@@ -1334,8 +1387,10 @@ void dcd_int_handler(uint8_t rhport)
 
   if(int_status & GINTSTS_SOF)
   {
+#if defined(LATHE_USB)
    trcTrc(file, __LINE__, "SOF");
    // putBufChar('f');
+#endif
     dwc2->gotgint = GINTSTS_SOF;
 
     if (_sof_en)
@@ -1355,8 +1410,10 @@ void dcd_int_handler(uint8_t rhport)
   // RxFIFO non-empty interrupt handling.
   if(int_status & GINTSTS_RXFLVL)
   {
+#if defined(LATHE_USB)
    trcTrc(file, __LINE__, "RXFLVL");
    // putBufChar('g');
+#endif
     // RXFLVL bit is read-only
 
     // Mask out RXFLVL while reading data from FIFO
@@ -1383,8 +1440,10 @@ void dcd_int_handler(uint8_t rhport)
   // OUT endpoint interrupt handling.
   if(int_status & GINTSTS_OEPINT)
   {
+#if defined(LATHE_USB)
    trcTrc(file, __LINE__, "OEPINT");
    // putBufChar('h');
+#endif
     // OEPINT is read-only, clear using DOEPINTn
     handle_epout_irq(rhport);
   }
@@ -1392,8 +1451,10 @@ void dcd_int_handler(uint8_t rhport)
   // IN endpoint interrupt handling.
   if(int_status & GINTSTS_IEPINT)
   {
+#if defined(LATHE_USB)
    trcTrc(file, __LINE__, "IEPINT");
    // putBufChar('i');
+#endif
     // IEPINT bit read-only, clear using DIEPINTn
     handle_epin_irq(rhport);
   }
@@ -1403,11 +1464,15 @@ void dcd_int_handler(uint8_t rhport)
   //    printf("      IISOIXFR!\r\n");
   ////    TU_LOG(DWC2_DEBUG, "      IISOIXFR!\r\n");
   //  }
+#if defined(LATHE_USB)
  //trcTrc(file, __LINE__, "exit isr");
  //putBufChar('*');
  isrEnd += 1;
  trcISR(1, isrEnd);
+#if defined(USB)
  dbg0Clr();
+#endif	/* USB */
+#endif
 }
 
 #endif

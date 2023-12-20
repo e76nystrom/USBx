@@ -55,19 +55,26 @@ void OTG_HS_IRQHandler(void)
 
 UART_HandleTypeDef UartHandle;
 
+#if defined(LATHE_USB)
 #if TINY_USB_CLK == 0
 void SystemClock_Config(void);
 void usbClock_Config(void);
 #endif
 extern void board_stm32h7_clock_init(void);
+#endif
+
 void board_init(void)
 {
 
+#if defined(LATHE_USB)
 #if CUBE_INIT_CLK == 0
-  board_stm32h7_clock_init();
+  board_stm32h7_clock_init();	/* LATHE_USB */
 #else
  SystemClock_Config();
  usbClock_Config();
+#endif
+#else
+  board_stm32h7_clock_init();
 #endif
 
   // Enable All GPIOs clocks
@@ -256,7 +263,7 @@ int board_uart_write(void const * buf, int len)
   return len;
 }
 
-#if !defined(USB)
+#if !defined(USB)		/* LATHE_USB */
 #if CFG_TUSB_OS == OPT_OS_NONE
 volatile uint32_t system_ticks = 0;
 
@@ -273,7 +280,7 @@ uint32_t board_millis(void)
 }
 #endif
 
-#if !defined(USB)
+#if !defined(USB)		/* LATHE_USB */
 void HardFault_Handler(void)
 {
   __asm("BKPT #0\n");

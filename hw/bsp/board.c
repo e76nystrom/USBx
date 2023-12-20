@@ -84,7 +84,13 @@ void board_led_task(void)
   #define sys_write   write
   #define sys_read    read
 #else
+
+#if defined(LATHE_USB)
   #define sys_write   _writex
+#else
+  #define sys_write   _write
+#endif
+
   #define sys_read    _read
 #endif
 

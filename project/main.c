@@ -30,6 +30,9 @@
 
 #include "bsp/board.h"
 #include "tusb.h"
+#include <stdio.h>
+
+#if defined(LATHE_USB)
 #include "tusb_config.h"
 
 #include "include/serialio.h"
@@ -50,10 +53,12 @@ extern char _end;
 //_ssize_t write(int fd  __attribute__((unused)), const char* buf, _ssize_t nbyte);
 //void Error_Handler(void);
 unsigned int getSP(void);
+#endif
 
 //------------- prototypes -------------//
 static void cdc_task(void);
 /*------------- MAIN -------------*/
+#if defined(LATHE_USB)
 
 #include <unistd.h>
 
@@ -103,8 +108,11 @@ void dwtAccessEnable(unsigned ena)
 }
 
 unsigned int sysClock;
+#endif
 
 int tinyMain(void)
+
+#if defined(LATHE_USB)
 {
  GPIO_InitTypeDef GPIO_InitStruct = {0};
  isrStart = 0;
@@ -186,16 +194,25 @@ int tinyMain(void)
  resetCnt();
  startCnt();
  printf("cycles %u\n", getCycles());
+#else
+ int main(void)
+ {
+  board_init();
+#endif
 
 // init device stack on configured roothub port
   tud_init(BOARD_TUD_RHPORT);
-
+  
+#if defined(LATHE_USB)
  uint32_t t0 = HAL_GetTick();
+#endif
 
   while (1)
   {
     tud_task(); // tinyusb device task
     cdc_task();
+    
+#if defined(LATHE_USB)
     pollBufChar();
     trcDisplay();
 
@@ -203,6 +220,7 @@ int tinyMain(void)
    if ((t - t0) > 500) {
     t0 = t;
     HAL_GPIO_TogglePin(LED_PORT, LED_PIN);
+#endif
    }
   }
 }
@@ -231,6 +249,7 @@ static void echo_serial_port(uint8_t itf, uint8_t buf[], uint32_t count)
   tud_cdc_n_write_flush(itf);
 }
 
+#if defined(LATHE_USB)
 void prtBuf(unsigned char *p, int size)
 {
  char col;
@@ -261,6 +280,7 @@ void prtBuf(unsigned char *p, int size)
   printf("\n");
 }
 #include "class/vendor/vendor_device.h"
+#endif
 //--------------------------------------------------------------------+
 // USB CDC
 //--------------------------------------------------------------------+
@@ -268,6 +288,7 @@ static void cdc_task(void)
 {
   uint8_t itf;
 
+#if defined(LATHE_CPP)
 #if CFG_TUD_VENDOR != 0
   if (tud_vendor_n_available(0))
   {
@@ -281,6 +302,7 @@ static void cdc_task(void)
    printf("write %d\n", count);
   }
 #endif  /* CFG_TUD_VENDOR */
+#endif
   for (itf = 0; itf < CFG_TUD_CDC; itf++)
   {
     // connected() check for DTR bit
@@ -301,6 +323,7 @@ static void cdc_task(void)
   }
 }
 
+#if defined(LATHE_USB)
 void errHandler(void)
 {
  __disable_irq();
@@ -321,4 +344,4 @@ void Error_Handler(void)
  /* USER CODE END Error_Handler_Debug */
 }
 #endif
-
+#endif

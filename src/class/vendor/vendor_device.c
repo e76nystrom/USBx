@@ -115,6 +115,8 @@ void tud_vendor_n_read_flush (uint8_t itf)
 //--------------------------------------------------------------------+
 // Write API
 //--------------------------------------------------------------------+
+
+#if defined(LATHE_USB)
 uint32_t tud_vendor_write_now (uint8_t itf, void const* buffer, uint32_t bufsize)
 {
  vendord_interface_t* p_itf = &_vendord_itf[itf];
@@ -123,6 +125,7 @@ uint32_t tud_vendor_write_now (uint8_t itf, void const* buffer, uint32_t bufsize
  ret = usbd_edpt_xfer(rhport, p_itf->ep_in, p_itf->epin_buf, bufsize);
  return (ret);
 }
+#endif
 
 static uint16_t maybe_transmit(vendord_interface_t* p_itf)
 {

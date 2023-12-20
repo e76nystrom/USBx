@@ -32,8 +32,13 @@
  *   [MSB]       MIDI | HID | MSC | CDC          [LSB]
  */
 #define _PID_MAP(itf, n)  ( (CFG_TUD_##itf) << (n) )
+#if defined(LATHE_USB)
 #define USB_PID           (0x4000 | _PID_MAP(CDC, 0) | _PID_MAP(MSC, 2) | _PID_MAP(HID, 4) | \
                            _PID_MAP(MIDI, 6) | _PID_MAP(VENDOR, 8) )
+#else
+#define USB_PID           (0x4000 | _PID_MAP(CDC, 0) | _PID_MAP(MSC, 1) | _PID_MAP(HID, 2) | \
+                           _PID_MAP(MIDI, 3) | _PID_MAP(VENDOR, 4) )
+#endif
 
 #define USB_VID   0xCafe
 #define USB_BCD   0x0200
@@ -81,13 +86,13 @@ enum
   ITF_NUM_CDC_0_DATA,
   ITF_NUM_CDC_1,
   ITF_NUM_CDC_1_DATA,
-#if !defined(USB) && (CFG_TUD_VENDOR != 0)
+#if !defined(USB) && (CFG_TUD_VENDOR != 0) /* LATHE_USB */
   ITF_NUM_VENDOR,
 #endif  /* USB */
   ITF_NUM_TOTAL
 };
 
-#if defined(USB) || CFG_TUD_VENDOR == 0
+#if defined(USB) || CFG_TUD_VENDOR == 0 /* LATHE_USB */
 
 #define CONFIG_TOTAL_LEN    (TUD_CONFIG_DESC_LEN + CFG_TUD_CDC * TUD_CDC_DESC_LEN)
 #else
@@ -136,7 +141,7 @@ enum
   #define EPNUM_CDC_1_OUT     0x04
   #define EPNUM_CDC_1_IN      0x84
 
-#if !defined(USB) && (CFG_TUD_VENDOR != 0)
+#if !defined(USB) && (CFG_TUD_VENDOR != 0) /* LATHE_USB */
   #define EPNUM_VENDOR_OUT     0x05
   #define EPNUM_VENDOR_IN      0x85
 #endif  /* USB */
@@ -152,7 +157,7 @@ uint8_t const desc_fs_configuration[] =
 
   // 2nd CDC: Interface number, string index, EP notification address and size, EP data address (out, in) and size.
   TUD_CDC_DESCRIPTOR(ITF_NUM_CDC_1, 4, EPNUM_CDC_1_NOTIF, 8, EPNUM_CDC_1_OUT, EPNUM_CDC_1_IN, 64),
-#if !defined(USB) && (CFG_TUD_VENDOR != 0)
+#if !defined(USB) && (CFG_TUD_VENDOR != 0) /* LATHE_USB */
   // Interface number, string index, EP Out & IN address, EP size
   TUD_VENDOR_DESCRIPTOR(ITF_NUM_VENDOR, 4, EPNUM_VENDOR_OUT, EPNUM_VENDOR_IN, 64),
 #endif  /* USB */

@@ -34,9 +34,12 @@
 
 #include "device/usbd.h"
 #include "device/usbd_pvt.h"
+
+#if defined(LATHE_USB)
 #include "trace.h"
 
 static const char *file = __FILE_NAME__;
+#endif
 
 //--------------------------------------------------------------------+
 // USBD Configuration
@@ -386,7 +389,9 @@ bool tud_inited(void)
 
 bool tud_init (uint8_t rhport)
 {
+#if defined(LATHE_USB)
  PRINT_FUNC();
+#endif
   // skip if already initialized
   if ( tud_inited() ) return true;
 
@@ -427,7 +432,9 @@ bool tud_init (uint8_t rhport)
   // Init device controller driver
   dcd_init(rhport);
   dcd_int_enable(rhport);
-PRINT_FUNC();
+#if defined(LATHE_USB)
+  PRINT_FUNC();
+#endif
   return true;
 }
 
@@ -498,16 +505,20 @@ void tud_task_ext(uint32_t timeout_ms, bool in_isr)
     switch ( event.event_id )
     {
       case DCD_EVENT_BUS_RESET:
+#if defined(LATHE_CPP)
        trcTrc(file, __LINE__, "EVENT_BUS_RESET");
        // putBufChar('A');
+#endif
         TU_LOG(USBD_DBG, ": %s Speed\r\n", tu_str_speed[event.bus_reset.speed]);
         usbd_reset(event.rhport);
         _usbd_dev.speed = event.bus_reset.speed;
       break;
 
       case DCD_EVENT_UNPLUGGED:
+#if defined(LATHE_CPP)
      trcTrc(file, __LINE__, "EVENT_UNPLUGGED");
        // putBufChar('B');
+#endif
         TU_LOG(USBD_DBG, "\r\n");
         usbd_reset(event.rhport);
 
@@ -516,8 +527,10 @@ void tud_task_ext(uint32_t timeout_ms, bool in_isr)
       break;
 
       case DCD_EVENT_SETUP_RECEIVED:
+#if defined(LATHE_CPP)
      trcTrc(file, __LINE__, "EVENT_SETUP_RECEIVED");
        // putBufChar('C');
+#endif
         TU_LOG_PTR(USBD_DBG, &event.setup_received);
         TU_LOG(USBD_DBG, "\r\n");
 
@@ -543,8 +556,10 @@ void tud_task_ext(uint32_t timeout_ms, bool in_isr)
 
       case DCD_EVENT_XFER_COMPLETE:
       {
+#if defined(LATHE_CPP)
      trcTrc(file, __LINE__, "EVENT_XFER_COMPLETE");
        // putBufChar('E');
+#endif
         // Invoke the class callback associated with the endpoint address
         uint8_t const ep_addr = event.xfer_complete.ep_addr;
         uint8_t const epnum   = tu_edpt_number(ep_addr);
@@ -574,8 +589,10 @@ void tud_task_ext(uint32_t timeout_ms, bool in_isr)
         // NOTE: When plugging/unplugging device, the D+/D- state are unstable and
         // can accidentally meet the SUSPEND condition ( Bus Idle for 3ms ), which result in a series of event
         // e.g suspend -> resume -> unplug/plug. Skip suspend/resume if not connected
+#if defined(LATHE_CPP)
      trcTrc(file, __LINE__, "EVENT_SUSPEND");
        // putBufChar('F');
+#endif
         if ( _usbd_dev.connected )
         {
           TU_LOG(USBD_DBG, ": Remote Wakeup = %u\r\n", _usbd_dev.remote_wakeup_en);
@@ -587,8 +604,10 @@ void tud_task_ext(uint32_t timeout_ms, bool in_isr)
       break;
 
       case DCD_EVENT_RESUME:
+#if defined(LATHE_CPP)
      trcTrc(file, __LINE__, "EVENT_RESUME");
        // putBufChar('G');
+#endif
         if ( _usbd_dev.connected )
         {
           TU_LOG(USBD_DBG, "\r\n");
@@ -600,8 +619,10 @@ void tud_task_ext(uint32_t timeout_ms, bool in_isr)
       break;
 
       case USBD_EVENT_FUNC_CALL:
+#if defined(LATHE_CPP)
        trcTrc(file, __LINE__, "EVENT_FUNC_CALL");
        // putBufChar('H');
+#endif
         TU_LOG(USBD_DBG, "\r\n");
         if ( event.func_call.func ) event.func_call.func(event.func_call.param);
       break;
@@ -660,7 +681,9 @@ static bool process_control_request(uint8_t rhport, tusb_control_request_t const
   {
     //------------- Device Requests e.g in enumeration -------------//
     case TUSB_REQ_RCPT_DEVICE:
+#if defined(LATHE_CPP)
       trcTrc(file, __LINE__, "REQ_RCPT_DEVICE");
+#endif
       if ( TUSB_REQ_TYPE_CLASS == p_request->bmRequestType_bit.type )
       {
         uint8_t const itf = tu_u16_low(p_request->wIndex);
@@ -683,7 +706,9 @@ static bool process_control_request(uint8_t rhport, tusb_control_request_t const
       switch ( p_request->bRequest )
       {
         case TUSB_REQ_SET_ADDRESS:
+#if defined(LATHE_CPP)
 	 trcTrc(file, __LINE__, "REQ_SET_ADDRESS");
+#endif
           // Depending on mcu, status phase could be sent either before or after changing device address,
           // or even require stack to not response with status at all
           // Therefore DCD must take full responsibility to response and include zlp status packet if needed.
@@ -694,7 +719,9 @@ static bool process_control_request(uint8_t rhport, tusb_control_request_t const
         break;
 
         case TUSB_REQ_GET_CONFIGURATION:
+#if defined(LATHE_CPP)
 	 trcTrc(file, __LINE__, "REQ_GET_CONFIGURATION");
+#endif
         {
           uint8_t cfg_num = _usbd_dev.cfg_num;
           tud_control_xfer(rhport, p_request, &cfg_num, 1);
@@ -702,7 +729,9 @@ static bool process_control_request(uint8_t rhport, tusb_control_request_t const
         break;
 
         case TUSB_REQ_SET_CONFIGURATION:
+#if defined(LATHE_CPP)
 	 trcTrc(file, __LINE__, "REQ_SET_CONFIGURATION");
+#endif
         {
           uint8_t const cfg_num = (uint8_t) p_request->wValue;
 
@@ -734,12 +763,16 @@ static bool process_control_request(uint8_t rhport, tusb_control_request_t const
         break;
 
         case TUSB_REQ_GET_DESCRIPTOR:
+#if defined(LATHE_CPP)
 	 trcTrc(file, __LINE__, "REQ_GET_DESCRIPTION");
+#endif
           TU_VERIFY( process_get_descriptor(rhport, p_request) );
         break;
 
         case TUSB_REQ_SET_FEATURE:
+#if defined(LATHE_CPP)
 	 trcTrc(file, __LINE__, "REQ_SET_FEATURE");
+#endif
           // Only support remote wakeup for device feature
           TU_VERIFY(TUSB_REQ_FEATURE_REMOTE_WAKEUP == p_request->wValue);
 
@@ -751,7 +784,9 @@ static bool process_control_request(uint8_t rhport, tusb_control_request_t const
         break;
 
         case TUSB_REQ_CLEAR_FEATURE:
+#if defined(LATHE_CPP)
 	 trcTrc(file, __LINE__, "REQ_CLEAR_FEATURE");
+#endif
           // Only support remote wakeup for device feature
           TU_VERIFY(TUSB_REQ_FEATURE_REMOTE_WAKEUP == p_request->wValue);
 
@@ -764,7 +799,9 @@ static bool process_control_request(uint8_t rhport, tusb_control_request_t const
 
         case TUSB_REQ_GET_STATUS:
         {
+#if defined(LATHE_CPP)
 	 trcTrc(file, __LINE__, "REQ_GET_STATUS");
+#endif
           // Device status bit mask
           // - Bit 0: Self Powered
           // - Bit 1: Remote Wakeup enabled
@@ -781,7 +818,9 @@ static bool process_control_request(uint8_t rhport, tusb_control_request_t const
     //------------- Class/Interface Specific Request -------------//
     case TUSB_REQ_RCPT_INTERFACE:
     {
+#if defined(LATHE_CPP)
      trcTrc(file, __LINE__, "REQ_RCPT_INTERFACE");
+#endif
       uint8_t const itf = tu_u16_low(p_request->wIndex);
       TU_VERIFY(itf < TU_ARRAY_SIZE(_usbd_dev.itf2drv));
 
@@ -822,7 +861,9 @@ static bool process_control_request(uint8_t rhport, tusb_control_request_t const
     //------------- Endpoint Request -------------//
     case TUSB_REQ_RCPT_ENDPOINT:
     {
+#if defined(LATHE_CPP)
      trcTrc(file, __LINE__, "REQ_RCPT_ENDPOINT");
+#endif
       uint8_t const ep_addr = tu_u16_low(p_request->wIndex);
       uint8_t const ep_num  = tu_edpt_number(ep_addr);
       uint8_t const ep_dir  = tu_edpt_dir(ep_addr);
@@ -897,7 +938,9 @@ static bool process_control_request(uint8_t rhport, tusb_control_request_t const
 // This function parse configuration descriptor & open drivers accordingly
 static bool process_set_config(uint8_t rhport, uint8_t cfg_num)
 {
+#if defined(LATHE_CPP)
  trcTrc(file, __LINE__, __func__);
+#endif
   // index is cfg_num-1
   tusb_desc_configuration_t const * desc_cfg = (tusb_desc_configuration_t const *) tud_descriptor_configuration_cb(cfg_num-1);
   TU_ASSERT(desc_cfg != NULL && desc_cfg->bDescriptorType == TUSB_DESC_CONFIGURATION);
@@ -994,7 +1037,9 @@ static bool process_set_config(uint8_t rhport, uint8_t cfg_num)
 // return descriptor's buffer and update desc_len
 static bool process_get_descriptor(uint8_t rhport, tusb_control_request_t const * p_request)
 {
+#if defined(LATHE_CPP)
  trcTrc(file, __LINE__, __func__);
+#endif
   tusb_desc_type_t const desc_type = (tusb_desc_type_t) tu_u16_high(p_request->wValue);
   uint8_t const desc_index = tu_u16_low( p_request->wValue );
 
@@ -1106,7 +1151,9 @@ TU_ATTR_FAST_FUNC void dcd_event_handler(dcd_event_t const * event, bool in_isr)
   switch (event->event_id)
   {
     case DCD_EVENT_UNPLUGGED:
+#if defined(LATHE_CPP)
      trcTrc(file, __LINE__, "EVENT_UNPLUGGED");
+#endif
       _usbd_dev.connected  = 0;
       _usbd_dev.addressed  = 0;
       _usbd_dev.cfg_num    = 0;
@@ -1127,7 +1174,9 @@ TU_ATTR_FAST_FUNC void dcd_event_handler(dcd_event_t const * event, bool in_isr)
     break;
 
     case DCD_EVENT_RESUME:
+#if defined(LATHE_CPP)
      trcTrc(file, __LINE__, "EVENT_RESUME");
+#endif
       // skip event if not connected (especially required for SAMD)
       if ( _usbd_dev.connected )
       {
@@ -1137,7 +1186,9 @@ TU_ATTR_FAST_FUNC void dcd_event_handler(dcd_event_t const * event, bool in_isr)
     break;
 
     case DCD_EVENT_SOF:
+#if defined(LATHE_CPP)
      trcTrc(file, __LINE__, "EVENT_SQR");
+#endif
       // SOF driver handler in ISR context
       for (uint8_t i = 0; i < TOTAL_DRIVER_COUNT; i++)
       {
@@ -1209,7 +1260,9 @@ bool usbd_open_edpt_pair(uint8_t rhport, uint8_t const* p_desc, uint8_t ep_count
 // Helper to defer an isr function
 void usbd_defer_func(osal_task_func_t func, void* param, bool in_isr)
 {
+#if defined(LATHE_CPP)
  trcTrc(file, __LINE__, __func__);
+#endif
   dcd_event_t event =
   {
       .rhport   = 0,
@@ -1228,7 +1281,9 @@ void usbd_defer_func(osal_task_func_t func, void* param, bool in_isr)
 
 bool usbd_edpt_open(uint8_t rhport, tusb_desc_endpoint_t const * desc_ep)
 {
+#if defined(LATHE_CPP)
  trcTrc(file, __LINE__, __func__);
+#endif
   rhport = _usbd_rhport;
 
   TU_ASSERT(tu_edpt_number(desc_ep->bEndpointAddress) < CFG_TUD_ENDPPOINT_MAX);
@@ -1253,7 +1308,9 @@ bool usbd_edpt_claim(uint8_t rhport, uint8_t ep_addr)
 
 bool usbd_edpt_release(uint8_t rhport, uint8_t ep_addr)
 {
+#if defined(LATHE_CPP)
  trcTrc(file, __LINE__, __func__);
+#endif
   (void) rhport;
 
   uint8_t const epnum       = tu_edpt_number(ep_addr);
@@ -1265,7 +1322,9 @@ bool usbd_edpt_release(uint8_t rhport, uint8_t ep_addr)
 
 bool usbd_edpt_xfer(uint8_t rhport, uint8_t ep_addr, uint8_t * buffer, uint16_t total_bytes)
 {
+#if defined(LATHE_CPP)
  trcTrc(file, __LINE__, __func__);
+#endif
   rhport = _usbd_rhport;
 
   uint8_t const epnum = tu_edpt_number(ep_addr);
@@ -1303,7 +1362,9 @@ bool usbd_edpt_xfer(uint8_t rhport, uint8_t ep_addr, uint8_t * buffer, uint16_t 
 // into the USB buffer!
 bool usbd_edpt_xfer_fifo(uint8_t rhport, uint8_t ep_addr, tu_fifo_t * ff, uint16_t total_bytes)
 {
+#if defined(LATHE_CPP)
  trcTrc(file, __LINE__, __func__);
+#endif
   rhport = _usbd_rhport;
 
   uint8_t const epnum = tu_edpt_number(ep_addr);
@@ -1335,7 +1396,9 @@ bool usbd_edpt_xfer_fifo(uint8_t rhport, uint8_t ep_addr, tu_fifo_t * ff, uint16
 
 bool usbd_edpt_busy(uint8_t rhport, uint8_t ep_addr)
 {
+#if defined(LATHE_CPP)
  trcTrc(file, __LINE__, __func__);
+#endif
   (void) rhport;
 
   uint8_t const epnum = tu_edpt_number(ep_addr);
@@ -1346,7 +1409,9 @@ bool usbd_edpt_busy(uint8_t rhport, uint8_t ep_addr)
 
 void usbd_edpt_stall(uint8_t rhport, uint8_t ep_addr)
 {
+#if defined(LATHE_CPP)
  trcTrc(file, __LINE__, __func__);
+#endif
   rhport = _usbd_rhport;
 
   uint8_t const epnum = tu_edpt_number(ep_addr);
@@ -1364,7 +1429,9 @@ void usbd_edpt_stall(uint8_t rhport, uint8_t ep_addr)
 
 void usbd_edpt_clear_stall(uint8_t rhport, uint8_t ep_addr)
 {
+#if defined(LATHE_CPP)
  trcTrc(file, __LINE__, __func__);
+#endif
   rhport = _usbd_rhport;
 
   uint8_t const epnum = tu_edpt_number(ep_addr);
@@ -1382,7 +1449,9 @@ void usbd_edpt_clear_stall(uint8_t rhport, uint8_t ep_addr)
 
 bool usbd_edpt_stalled(uint8_t rhport, uint8_t ep_addr)
 {
+#if defined(LATHE_CPP)
  trcTrc(file, __LINE__, __func__);
+#endif
   (void) rhport;
 
   uint8_t const epnum = tu_edpt_number(ep_addr);
@@ -1399,7 +1468,9 @@ bool usbd_edpt_stalled(uint8_t rhport, uint8_t ep_addr)
  */
 void usbd_edpt_close(uint8_t rhport, uint8_t ep_addr)
 {
+#if defined(LATHE_CPP)
  trcTrc(file, __LINE__, __func__);
+#endif
   rhport = _usbd_rhport;
 
   TU_ASSERT(dcd_edpt_close, /**/);
@@ -1418,7 +1489,9 @@ void usbd_edpt_close(uint8_t rhport, uint8_t ep_addr)
 
 void usbd_sof_enable(uint8_t rhport, bool en)
 {
+#if defined(LATHE_CPP)
  trcTrc(file, __LINE__, __func__);
+#endif
   rhport = _usbd_rhport;
 
   // TODO: Check needed if all drivers including the user sof_cb does not need an active SOF ISR any more.
@@ -1428,7 +1501,9 @@ void usbd_sof_enable(uint8_t rhport, bool en)
 
 bool usbd_edpt_iso_alloc(uint8_t rhport, uint8_t ep_addr, uint16_t largest_packet_size)
 {
+#if defined(LATHE_CPP)
  trcTrc(file, __LINE__, __func__);
+#endif
   rhport = _usbd_rhport;
 
   TU_ASSERT(dcd_edpt_iso_alloc);
@@ -1439,7 +1514,9 @@ bool usbd_edpt_iso_alloc(uint8_t rhport, uint8_t ep_addr, uint16_t largest_packe
 
 bool usbd_edpt_iso_activate(uint8_t rhport, tusb_desc_endpoint_t const * desc_ep)
 {
+#if defined(LATHE_CPP)
  trcTrc(file, __LINE__, __func__);
+#endif
   rhport = _usbd_rhport;
 
   uint8_t const epnum = tu_edpt_number(desc_ep->bEndpointAddress);
