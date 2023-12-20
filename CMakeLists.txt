@@ -123,7 +123,12 @@ add_subdirectory(systemlib)
 
 set(LINKER_SCRIPT ${CMAKE_SOURCE_DIR}/STM32H743ZITX_FLASH.ld)
 add_link_options(-T ${LINKER_SCRIPT})
-add_link_options(-Wl,-gc-sections,--print-memory-usage,-Map=${PROJECT_BINARY_DIR}/${PROJECT_NAME}.map)
+
+add_link_options(
+		-Wl,-gc-sections
+		-Wl,--print-memory-usage
+		-Wl,-Map=${PROJECT_BINARY_DIR}/${PROJECT_NAME}.map
+)
 add_link_options(-Xlinker --cref)
 add_link_options(-Wl,--no-warn-rwx-segments)
 #add_link_options(-f${LTO})
@@ -141,7 +146,6 @@ add_link_options(
 	-g3
 	--specs=nano.specs
 )
-
 
 add_executable(${PROJECT_NAME}.elf ${SOURCES})
 
